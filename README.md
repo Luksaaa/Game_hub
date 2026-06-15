@@ -14,6 +14,11 @@ Target Point je Flutter aplikacija za pracenje pikado meceva. Glavni ekran koris
 - `Undo`, `Miss` i `Save turn` akcije.
 - Bust logika za X01.
 - Osnovni prosjek po igracu.
+- Korisnicki ili guest profil odvojen od igraca u mecu.
+- Player group presets za brzi odabir ekipe.
+- Dijeljenje player grupa s pratiteljima.
+- Following lista korisnika.
+- Google login preko Firebase Auth kada je Firebase konfiguriran.
 - Responsive mobile i desktop layout.
 - Automatski light/dark mode prema postavkama sustava.
 - Platformske ikone za Android, iOS, macOS, web i Windows.
@@ -42,7 +47,11 @@ flutter test
 
 ## Struktura projekta
 
-- `lib/main.dart` - glavna aplikacija, modeli igre, UI layout, dartboard painter i scoring logika.
+- `lib/main.dart` - glavna aplikacija, navigacija i responsive shell.
+- `lib/models` - modeli i state controller za igru, korisnika, player grupe i povijest.
+- `lib/screens` - glavni ekrani aplikacije.
+- `lib/services` - integracije za auth i cloud spremanje.
+- `lib/widgets` - ponovni UI elementi poput dartboarda i dialoga.
 - `test/widget_test.dart` - widget testovi za unos pogotka, undo, mobile layout i dark mode.
 - `android/app/src/main/res/mipmap-*` - Android launcher ikone.
 - `ios/Runner/Assets.xcassets/AppIcon.appiconset` - iOS app ikone.
@@ -52,16 +61,15 @@ flutter test
 
 ## Trenutna ogranicenja
 
-- Podaci se jos ne spremaju nakon zatvaranja aplikacije.
-- Nema login sustava.
-- Igraci su trenutno hardcoded preset.
-- Povijest meceva jos nije implementirana.
-- Search ikona u mobile headeru je trenutno samo vizualni placeholder.
+- Firebase projekt jos mora biti konfiguriran kroz platform-specific config datoteke.
+- Guest podaci se jos ne spremaju nakon zatvaranja aplikacije.
+- Player grupe i following imaju lokalni session fallback dok cloud nije spojen.
+- Email/password login jos nije implementiran.
 
 ## Sljedeci koraci
 
-- Dodati lokalno spremanje meceva i igraca.
-- Omoguciti dodavanje i uredjivanje igraca.
-- Dodati match presets.
-- Dodati login i cloud sync.
-- Dodati detaljniju statistiku i povijest meceva.
+- Spojiti Firebase config datoteke za Android, iOS, web i ostale platforme.
+- Dodati lokalno trajno spremanje za guest mode.
+- Dodati ucitavanje player grupa i following liste iz Firestorea.
+- Dodati email/password login.
+- Dodati detaljniju statistiku i cloud sync povijesti meceva.

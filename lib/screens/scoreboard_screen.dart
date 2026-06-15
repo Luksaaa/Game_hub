@@ -4,7 +4,6 @@ import '../models/game_state_controller.dart';
 import '../models/game_settings.dart';
 import '../theme/app_palette.dart';
 
-
 class ScoreboardScreen extends StatefulWidget {
   const ScoreboardScreen({required this.controller, super.key});
 
@@ -58,7 +57,9 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                         side: BorderSide(
-                          color: player.isWinner ? palette.primary : palette.border,
+                          color: player.isWinner
+                              ? palette.primary
+                              : palette.border,
                           width: player.isWinner ? 2 : 1,
                         ),
                       ),
@@ -68,7 +69,9 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                             leading: CircleAvatar(
                               backgroundColor: Color(player.avatarColorValue),
                               foregroundColor: Colors.white,
-                              child: Text(player.name.substring(0, 1).toUpperCase()),
+                              child: Text(
+                                player.name.substring(0, 1).toUpperCase(),
+                              ),
                             ),
                             title: Row(
                               children: [
@@ -81,13 +84,20 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                                 ),
                                 if (player.isWinner) ...[
                                   const SizedBox(width: 8),
-                                  Icon(Icons.emoji_events, color: palette.accent),
+                                  Icon(
+                                    Icons.emoji_events,
+                                    color: palette.accent,
+                                  ),
                                 ],
                               ],
                             ),
                             subtitle: Text(
                               '3-Dart Avg: ${player.average.toStringAsFixed(1)} | Throws: ${player.totalThrows}',
-                              style: TextStyle(color: palette.textMuted, fontWeight: FontWeight.w600, fontSize: 13),
+                              style: TextStyle(
+                                color: palette.textMuted,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
                             ),
                             trailing: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -97,42 +107,70 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                                   '${player.remaining}',
                                   style: theme.textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.w900,
-                                    color: player.isWinner ? palette.primary : palette.text,
+                                    color: player.isWinner
+                                        ? palette.primary
+                                        : palette.text,
                                   ),
                                 ),
                                 Text(
-                                  widget.controller.settings.mode == GameMode.x01 ? 'LEFT' : 'SCORED',
+                                  widget.controller.settings.mode ==
+                                          GameMode.x01
+                                      ? 'LEFT'
+                                      : 'SCORED',
                                   style: TextStyle(
                                     fontSize: 9,
                                     fontWeight: FontWeight.bold,
                                     color: palette.textMuted,
                                   ),
-                                )
+                                ),
                               ],
                             ),
                           ),
-                          
+
                           // Stats strip
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                              vertical: 8.0,
+                            ),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8.0,
+                                horizontal: 12.0,
+                              ),
                               decoration: BoxDecoration(
                                 color: palette.surfaceMuted,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
                                 children: [
-                                  _MiniStat(label: '180s', value: '${player.count180s}', palette: palette),
-                                  _MiniStat(label: '140+', value: '${player.count140plus}', palette: palette),
-                                  _MiniStat(label: '100+', value: '${player.count100plus}', palette: palette),
-                                  _MiniStat(label: 'Best Turn', value: '${player.highestTurnScore}', palette: palette),
+                                  _MiniStat(
+                                    label: '180s',
+                                    value: '${player.count180s}',
+                                    palette: palette,
+                                  ),
+                                  _MiniStat(
+                                    label: '140+',
+                                    value: '${player.count140plus}',
+                                    palette: palette,
+                                  ),
+                                  _MiniStat(
+                                    label: '100+',
+                                    value: '${player.count100plus}',
+                                    palette: palette,
+                                  ),
+                                  _MiniStat(
+                                    label: 'Best Turn',
+                                    value: '${player.highestTurnScore}',
+                                    palette: palette,
+                                  ),
                                 ],
                               ),
                             ),
                           ),
-                          
+
                           // Expand/Collapse turns history
                           InkWell(
                             onTap: () {
@@ -140,14 +178,20 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                                 _expandedPlayers[player.name] = !isExpanded;
                               });
                             },
-                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                            borderRadius: const BorderRadius.vertical(
+                              bottom: Radius.circular(16),
+                            ),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8.0),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8.0,
+                              ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    isExpanded ? 'Hide Throw History' : 'Show Throw History',
+                                    isExpanded
+                                        ? 'Hide Throw History'
+                                        : 'Show Throw History',
                                     style: TextStyle(
                                       color: palette.primary,
                                       fontWeight: FontWeight.bold,
@@ -156,7 +200,9 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                                   ),
                                   const SizedBox(width: 4),
                                   Icon(
-                                    isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                    isExpanded
+                                        ? Icons.keyboard_arrow_up
+                                        : Icons.keyboard_arrow_down,
                                     color: palette.primary,
                                     size: 18,
                                   ),
@@ -164,18 +210,23 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                               ),
                             ),
                           ),
-                          
+
                           if (isExpanded) ...[
                             const Divider(height: 1),
                             Container(
-                              color: palette.surfaceMuted.withValues(alpha: 0.5),
+                              color: palette.surfaceMuted.withValues(
+                                alpha: 0.5,
+                              ),
                               constraints: const BoxConstraints(maxHeight: 250),
                               child: player.turns.isEmpty
                                   ? const Padding(
                                       padding: EdgeInsets.all(16.0),
                                       child: Text(
                                         'No turns thrown yet.',
-                                        style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+                                        style: TextStyle(
+                                          fontStyle: FontStyle.italic,
+                                          color: Colors.grey,
+                                        ),
                                       ),
                                     )
                                   : ListView.builder(
@@ -184,9 +235,14 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                                       itemCount: player.turns.length,
                                       itemBuilder: (context, tIdx) {
                                         final turn = player.turns[tIdx];
-                                        final turnScore = turn.fold<int>(0, (sum, hit) => sum + hit.score);
-                                        final hitsLabels = turn.map((hit) => hit.label).join(', ');
-                                        
+                                        final turnScore = turn.fold<int>(
+                                          0,
+                                          (sum, hit) => sum + hit.score,
+                                        );
+                                        final hitsLabels = turn
+                                            .map((hit) => hit.label)
+                                            .join(', ');
+
                                         return ListTile(
                                           dense: true,
                                           title: Text(
@@ -197,10 +253,14 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                                             ),
                                           ),
                                           trailing: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 2,
+                                            ),
                                             decoration: BoxDecoration(
                                               color: palette.primarySoft,
-                                              borderRadius: BorderRadius.circular(4),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
                                             ),
                                             child: Text(
                                               '+$turnScore',

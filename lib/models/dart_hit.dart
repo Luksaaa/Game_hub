@@ -14,7 +14,7 @@ class DartHit {
   final int score;
   final SegmentBand band;
   final int? number;
-  
+
   // Normalized hit coordinate from center (-1.0 to 1.0)
   final double? dx;
   final double? dy;

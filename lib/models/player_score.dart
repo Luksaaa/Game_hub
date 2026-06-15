@@ -31,7 +31,9 @@ class PlayerScore {
   }
 
   int get count180s {
-    return turns.where((t) => t.fold<int>(0, (sum, hit) => sum + hit.score) == 180).length;
+    return turns
+        .where((t) => t.fold<int>(0, (sum, hit) => sum + hit.score) == 180)
+        .length;
   }
 
   int get count140plus {
@@ -52,7 +54,9 @@ class PlayerScore {
 
   int get doubleHits => turns
       .expand((t) => t)
-      .where((hit) => hit.band == SegmentBand.double || hit.band == SegmentBand.bull)
+      .where(
+        (hit) => hit.band == SegmentBand.double || hit.band == SegmentBand.bull,
+      )
       .length;
 
   int get tripleHits => turns

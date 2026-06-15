@@ -67,7 +67,10 @@ class _SearchDialogState extends State<SearchDialog> {
                             )
                           : null,
                       focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: palette.primary, width: 2),
+                        borderSide: BorderSide(
+                          color: palette.primary,
+                          width: 2,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       enabledBorder: OutlineInputBorder(
@@ -75,7 +78,10 @@ class _SearchDialogState extends State<SearchDialog> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    style: TextStyle(color: palette.text, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: palette.text,
+                      fontWeight: FontWeight.bold,
+                    ),
                     autofocus: true,
                   ),
                 ),
@@ -99,7 +105,11 @@ class _SearchDialogState extends State<SearchDialog> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.search_off, size: 48, color: palette.textMuted),
+                          Icon(
+                            Icons.search_off,
+                            size: 48,
+                            color: palette.textMuted,
+                          ),
                           const SizedBox(height: 12),
                           Text(
                             'No results found',
@@ -117,7 +127,10 @@ class _SearchDialogState extends State<SearchDialog> {
                     children: [
                       if (filteredP.isNotEmpty) ...[
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 8.0,
+                            horizontal: 4.0,
+                          ),
                           child: Text(
                             'Players (${filteredP.length})',
                             style: theme.textTheme.titleSmall?.copyWith(
@@ -126,45 +139,63 @@ class _SearchDialogState extends State<SearchDialog> {
                             ),
                           ),
                         ),
-                        ...filteredP.map((profile) => Card(
-                              color: palette.surfaceMuted,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                side: BorderSide(color: palette.border),
+                        ...filteredP.map(
+                          (profile) => Card(
+                            color: palette.surfaceMuted,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: BorderSide(color: palette.border),
+                            ),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: Color(
+                                  profile.avatarColorValue,
+                                ),
+                                foregroundColor: Colors.white,
+                                child: Text(
+                                  profile.name.substring(0, 1).toUpperCase(),
+                                ),
                               ),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: Color(profile.avatarColorValue),
-                                  foregroundColor: Colors.white,
-                                  child: Text(profile.name.substring(0, 1).toUpperCase()),
+                              title: Text(
+                                profile.name,
+                                style: TextStyle(
+                                  color: palette.text,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                title: Text(
-                                  profile.name,
-                                  style: TextStyle(color: palette.text, fontWeight: FontWeight.bold),
-                                ),
-                                subtitle: Text(
-                                  'Avg: ${profile.averageScore.toStringAsFixed(1)} | High: ${profile.highestTurn} | Wins: ${profile.matchesWon}',
-                                  style: TextStyle(color: palette.textMuted, fontSize: 12),
-                                ),
-                                trailing: Icon(Icons.chevron_right, color: palette.textMuted),
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => ProfileDialog(
-                                      profile: profile,
-                                      controller: widget.controller,
-                                    ),
-                                  );
-                                },
                               ),
-                            )),
+                              subtitle: Text(
+                                'Avg: ${profile.averageScore.toStringAsFixed(1)} | High: ${profile.highestTurn} | Wins: ${profile.matchesWon}',
+                                style: TextStyle(
+                                  color: palette.textMuted,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              trailing: Icon(
+                                Icons.chevron_right,
+                                color: palette.textMuted,
+                              ),
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => ProfileDialog(
+                                    profile: profile,
+                                    controller: widget.controller,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 12),
                       ],
                       if (filteredH.isNotEmpty) ...[
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 8.0,
+                            horizontal: 4.0,
+                          ),
                           child: Text(
                             'Match History (${filteredH.length})',
                             style: theme.textTheme.titleSmall?.copyWith(
@@ -173,38 +204,52 @@ class _SearchDialogState extends State<SearchDialog> {
                             ),
                           ),
                         ),
-                        ...filteredH.map((match) => Card(
-                              color: palette.surfaceMuted,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                side: BorderSide(color: palette.border),
+                        ...filteredH.map(
+                          (match) => Card(
+                            color: palette.surfaceMuted,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: BorderSide(color: palette.border),
+                            ),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: palette.primarySoft,
+                                foregroundColor: palette.primary,
+                                child: const Icon(Icons.emoji_events),
                               ),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: palette.primarySoft,
-                                  foregroundColor: palette.primary,
-                                  child: const Icon(Icons.emoji_events),
+                              title: Text(
+                                'Winner: ${match.winnerName}',
+                                style: TextStyle(
+                                  color: palette.text,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                title: Text(
-                                  'Winner: ${match.winnerName}',
-                                  style: TextStyle(color: palette.text, fontWeight: FontWeight.bold),
-                                ),
-                                subtitle: Text(
-                                  '${match.settings.mode == GameMode.x01 ? "X01 (${match.settings.startingScore})" : "Count Up"} | ${match.date.day}.${match.date.month}.${match.date.year}',
-                                  style: TextStyle(color: palette.textMuted, fontSize: 12),
-                                ),
-                                trailing: Icon(Icons.chevron_right, color: palette.textMuted),
-                                onTap: () {
-                                  Navigator.of(context).pop();
-                                  // Open match recap directly
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => MatchRecapDialog(match: match, palette: palette),
-                                  );
-                                },
                               ),
-                            )),
+                              subtitle: Text(
+                                '${match.settings.mode == GameMode.x01 ? "X01 (${match.settings.startingScore})" : "Count Up"} | ${match.date.day}.${match.date.month}.${match.date.year}',
+                                style: TextStyle(
+                                  color: palette.textMuted,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              trailing: Icon(
+                                Icons.chevron_right,
+                                color: palette.textMuted,
+                              ),
+                              onTap: () {
+                                Navigator.of(context).pop();
+                                // Open match recap directly
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => MatchRecapDialog(
+                                    match: match,
+                                    palette: palette,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
                       ],
                     ],
                   );
@@ -296,7 +341,9 @@ class MatchRecapDialog extends StatelessWidget {
                       margin: const EdgeInsets.only(bottom: 10),
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: isWinner ? palette.primarySoft : palette.surfaceMuted,
+                        color: isWinner
+                            ? palette.primarySoft
+                            : palette.surfaceMuted,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: isWinner ? palette.primary : palette.border,
@@ -307,7 +354,9 @@ class MatchRecapDialog extends StatelessWidget {
                           CircleAvatar(
                             backgroundColor: Color(player.avatarColorValue),
                             foregroundColor: Colors.white,
-                            child: Text(player.name.substring(0, 1).toUpperCase()),
+                            child: Text(
+                              player.name.substring(0, 1).toUpperCase(),
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -318,14 +367,19 @@ class MatchRecapDialog extends StatelessWidget {
                                   children: [
                                     Text(
                                       player.name,
-                                      style: theme.textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.w900,
-                                        color: palette.text,
-                                      ),
+                                      style: theme.textTheme.titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w900,
+                                            color: palette.text,
+                                          ),
                                     ),
                                     if (isWinner) ...[
                                       const SizedBox(width: 8),
-                                      Icon(Icons.emoji_events, color: palette.accent, size: 18),
+                                      Icon(
+                                        Icons.emoji_events,
+                                        color: palette.accent,
+                                        size: 18,
+                                      ),
                                     ],
                                   ],
                                 ),
@@ -340,7 +394,9 @@ class MatchRecapDialog extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            isX01 ? '${player.remaining}' : '${player.totalScored}',
+                            isX01
+                                ? '${player.remaining}'
+                                : '${player.totalScored}',
                             style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.w900,
                               color: isWinner ? palette.primary : palette.text,
@@ -357,9 +413,13 @@ class MatchRecapDialog extends StatelessWidget {
             Center(
               child: Text(
                 'Played on ${match.date.day}.${match.date.month}.${match.date.year} ${match.date.hour.toString().padLeft(2, '0')}:${match.date.minute.toString().padLeft(2, '0')}',
-                style: TextStyle(color: palette.textMuted, fontSize: 12, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: palette.textMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            )
+            ),
           ],
         ),
       ),

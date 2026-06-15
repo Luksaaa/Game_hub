@@ -82,7 +82,7 @@ class _ProfileDialogState extends State<ProfileDialog> {
                 ],
               ),
               const SizedBox(height: 16),
-              
+
               // Edit Name
               TextField(
                 controller: _nameController,
@@ -98,7 +98,10 @@ class _ProfileDialogState extends State<ProfileDialog> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                style: TextStyle(color: palette.text, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  color: palette.text,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -128,21 +131,15 @@ class _ProfileDialogState extends State<ProfileDialog> {
                         color: Color(colorVal),
                         shape: BoxShape.circle,
                         border: isSelected
-                            ? Border.all(
-                                color: palette.text,
-                                width: 3,
-                              )
-                            : Border.all(
-                                color: Colors.transparent,
-                                width: 3,
-                              ),
+                            ? Border.all(color: palette.text, width: 3)
+                            : Border.all(color: Colors.transparent, width: 3),
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
                                   color: Color(colorVal).withValues(alpha: 0.4),
                                   blurRadius: 8,
                                   spreadRadius: 1,
-                                )
+                                ),
                               ]
                             : null,
                       ),
@@ -179,7 +176,8 @@ class _ProfileDialogState extends State<ProfileDialog> {
                     const SizedBox(height: 12),
                     _StatRow(
                       label: 'Matches Played / Won',
-                      value: '${widget.profile.matchesPlayed} / ${widget.profile.matchesWon} (${winRate.toStringAsFixed(0)}%)',
+                      value:
+                          '${widget.profile.matchesPlayed} / ${widget.profile.matchesWon} (${winRate.toStringAsFixed(0)}%)',
                       palette: palette,
                     ),
                     const Divider(height: 16),
@@ -203,7 +201,8 @@ class _ProfileDialogState extends State<ProfileDialog> {
                     const Divider(height: 16),
                     _StatRow(
                       label: 'Doubles / Triples Hit',
-                      value: '${widget.profile.doubleHits} / ${widget.profile.tripleHits}',
+                      value:
+                          '${widget.profile.doubleHits} / ${widget.profile.tripleHits}',
                       palette: palette,
                     ),
                   ],
@@ -216,7 +215,10 @@ class _ProfileDialogState extends State<ProfileDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text('Cancel', style: TextStyle(color: palette.textMuted)),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(color: palette.textMuted),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   FilledButton(
@@ -268,7 +270,10 @@ class _StatRow extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(color: palette.textMuted, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: palette.textMuted,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         Text(
           value,

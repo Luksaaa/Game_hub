@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:target_point/main.dart';
+import 'package:target_point/models/game_state_controller.dart';
 import 'package:target_point/widgets/dartboard.dart';
-
 
 void main() {
   Future<void> pumpApp(
@@ -80,5 +80,29 @@ void main() {
     expect(find.text('Target Point'), findsOneWidget);
     expect(find.byType(Dartboard), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  test('keeps the app user profile separate from the active match player', () {
+    final controller = GameStateController();
+
+    expect(controller.currentUser.displayName, 'Guest');
+    expect(controller.currentUser.initials, 'G');
+    expect(controller.currentPlayer.name, 'Marko');
+
+    controller.updateUserProfile('Luka Guest', 0xFF1A6EB4);
+
+    expect(controller.currentUser.displayName, 'Luka Guest');
+    expect(controller.currentUser.initials, 'L');
+    expect(controller.currentPlayer.name, 'Marko');
+  });
+
+  test('can create and select a player group preset', () {
+    final controller = GameStateController();
+
+    controller.createPlayerGroup('Duo Night', ['Luka', 'Borna']);
+
+    expect(controller.selectedPlayerGroup?.name, 'Duo Night');
+    expect(controller.players.map((player) => player.name), ['Luka', 'Borna']);
+    expect(controller.playerGroups.length, 2);
   });
 }

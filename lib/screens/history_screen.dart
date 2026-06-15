@@ -5,7 +5,6 @@ import '../models/game_settings.dart';
 import '../theme/app_palette.dart';
 import '../widgets/search_dialog.dart'; // To reuse MatchRecapDialog
 
-
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({required this.controller, super.key});
 
@@ -36,7 +35,11 @@ class HistoryScreen extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.history_toggle_off, size: 54, color: palette.textMuted),
+                      Icon(
+                        Icons.history_toggle_off,
+                        size: 54,
+                        color: palette.textMuted,
+                      ),
                       const SizedBox(height: 12),
                       Text(
                         'No matches played yet',
@@ -60,9 +63,10 @@ class HistoryScreen extends StatelessWidget {
                   itemCount: history.length,
                   itemBuilder: (context, index) {
                     final match = history[index];
-                    final dateStr = '${match.date.day}.${match.date.month}.${match.date.year} ${match.date.hour.toString().padLeft(2, '0')}:${match.date.minute.toString().padLeft(2, '0')}';
+                    final dateStr =
+                        '${match.date.day}.${match.date.month}.${match.date.year} ${match.date.hour.toString().padLeft(2, '0')}:${match.date.minute.toString().padLeft(2, '0')}';
                     final isX01 = match.settings.mode == GameMode.x01;
-                    
+
                     return Card(
                       color: palette.surface,
                       elevation: 0,
@@ -87,7 +91,11 @@ class HistoryScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            Icon(Icons.emoji_events, color: palette.accent, size: 16),
+                            Icon(
+                              Icons.emoji_events,
+                              color: palette.accent,
+                              size: 16,
+                            ),
                           ],
                         ),
                         subtitle: Text(
@@ -102,23 +110,39 @@ class HistoryScreen extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             // Render mini avatars of participants
-                            ...match.finalScores.take(3).map((player) => Padding(
-                                  padding: const EdgeInsets.only(left: 4.0),
-                                  child: CircleAvatar(
-                                    radius: 10,
-                                    backgroundColor: Color(player.avatarColorValue),
-                                    child: Text(
-                                      player.name.substring(0, 1).toUpperCase(),
-                                      style: const TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.bold),
+                            ...match.finalScores
+                                .take(3)
+                                .map(
+                                  (player) => Padding(
+                                    padding: const EdgeInsets.only(left: 4.0),
+                                    child: CircleAvatar(
+                                      radius: 10,
+                                      backgroundColor: Color(
+                                        player.avatarColorValue,
+                                      ),
+                                      child: Text(
+                                        player.name
+                                            .substring(0, 1)
+                                            .toUpperCase(),
+                                        style: const TextStyle(
+                                          fontSize: 8,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                )),
+                                ),
                             if (match.finalScores.length > 3)
                               Padding(
                                 padding: const EdgeInsets.only(left: 4.0),
                                 child: Text(
                                   '+${match.finalScores.length - 3}',
-                                  style: TextStyle(color: palette.textMuted, fontSize: 10, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    color: palette.textMuted,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             const SizedBox(width: 8),
@@ -128,7 +152,10 @@ class HistoryScreen extends StatelessWidget {
                         onTap: () {
                           showDialog(
                             context: context,
-                            builder: (context) => MatchRecapDialog(match: match, palette: palette),
+                            builder: (context) => MatchRecapDialog(
+                              match: match,
+                              palette: palette,
+                            ),
                           );
                         },
                       ),

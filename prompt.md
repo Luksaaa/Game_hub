@@ -9,7 +9,7 @@ Target Point is a darts scoring app. The main interaction is a large clickable d
 The app should eventually support:
 
 - Guest usage without login.
-- Optional Google/email account login.
+- Optional Google/email account login. Google login is now scaffolded through Firebase Auth.
 - Local player profiles and recurring player groups.
 - Match presets.
 - Match history and statistics.
@@ -17,12 +17,17 @@ The app should eventually support:
 
 ## Current Project Shape
 
-The app is currently implemented mostly in:
+The app is currently split across:
 
 - `lib/main.dart`
+- `lib/models`
+- `lib/screens`
+- `lib/services`
+- `lib/theme`
+- `lib/widgets`
 - `test/widget_test.dart`
 
-There are no extra state management packages or backend integrations yet. Keep early changes simple and avoid introducing dependencies unless they clearly solve a real problem.
+State is currently managed by `GameStateController`, a `ChangeNotifier`. Firebase packages are installed, but a concrete Firebase project still needs platform config files/options before Google login and Firestore sync can work in a real environment.
 
 ## Current Features
 
@@ -42,6 +47,11 @@ There are no extra state management packages or backend integrations yet. Keep e
 - Responsive mobile/desktop layout.
 - System light/dark mode.
 - App icons updated across Android, iOS, macOS, web, and Windows.
+- User/guest profile separate from match players.
+- Player group presets.
+- Following list.
+- Shared player group state.
+- Google login flow with Firebase-ready fallback.
 
 ## Important Classes And Responsibilities
 
@@ -56,6 +66,65 @@ Root widget. Defines:
 - home screen: `DartMatchScreen`
 
 Do not replace `ThemeMode.system` unless the user asks for manual theme switching.
+
+### `AuthRepository`
+
+Located at `lib/services/auth_repository.dart`.
+
+Responsibilities:
+
+- Initialize Firebase if platform config exists.
+- Initialize Google Sign-In.
+- Perform Google login through Firebase Auth.
+- Save user profile documents.
+- Save player groups under user documents.
+- Save shared player groups.
+- Save following relationships.
+
+Important behavior:
+
+- The app must keep running when Firebase is not configured.
+- If Firebase is missing, auth/cloud methods should fail gracefully and leave guest mode active.
+
+### `UserSession`
+
+Located at `lib/models/user_session.dart`.
+
+Represents the app user, not a match player.
+
+Fields:
+
+- `id`
+- `displayName`
+- `email`
+- `avatarColorValue`
+- `isGuest`
+
+The top-right profile avatar must use `GameStateController.currentUser`, not `currentPlayer`.
+
+### `PlayerGroupPreset`
+
+Located at `lib/models/user_session.dart`.
+
+Represents a reusable group of players for starting a match.
+
+Fields:
+
+- `id`
+- `name`
+- `playerNames`
+- `ownerUserId`
+- `isShared`
+
+Selecting a group replaces the active match lineup and resets the match scores.
+
+### `FollowedUser`
+
+Located at `lib/models/user_session.dart`.
+
+Represents a followed app user.
+
+Used for the sharing model where a user can share player group presets with followers.
 
 ### `AppPalette`
 
@@ -135,80 +204,85 @@ Current match settings:
 
 ### `DartMatchScreen`
 
-Main stateful match screen.
+Main responsive shell screen.
 
 Responsibilities:
 
-- Own current game settings.
-- Own current player scores.
-- Own pending turn hits.
-- Handle hit input.
-- Handle undo.
-- Handle miss.
-- Commit turns.
-- Apply X01 bust and finish logic.
-- Reset match when settings change.
-- Choose desktop or mobile layout.
+- Create and own `GameStateController`.
+- Render desktop navigation rail or mobile app bar/bottom navigation.
+- Route tabs to `PlayScreen`, `ScoreboardScreen`, `SettingsScreen`, and `HistoryScreen`.
+- Open `AccountScreen`.
+- Open `SearchDialog`.
+
+Profile avatar rule:
+
+- Header avatar must show `controller.currentUser.initials`.
+- It must not change when the active match player changes.
+
+### `GameStateController`
+
+Located at `lib/models/game_state_controller.dart`.
+
+Responsibilities:
+
+- Own user session.
+- Own player profile registry.
+- Own player group presets.
+- Own following list.
+- Own active match settings.
+- Own active match scores and pending turn.
+- Apply scoring, bust, finish, and match archive logic.
+- Manage tabs/search.
+- Provide Google login actions through `AuthRepository`.
 
 Important methods:
 
-- `_handleHit(DartHit hit)` - adds a pending hit and auto-commits after three darts.
-- `_undoLastHit()` - removes the last pending hit.
-- `_addMiss()` - records a zero-point miss.
-- `_commitTurn()` - saves current turn into player history and updates score.
-- `_isValidFinish(int remaining, DartHit hit)` - validates X01 finishing throw.
-- `_advanceTurn()` - moves to the next player unless the match is won.
-- `_resetMatch()` - rebuilds game state with optional changed settings.
+- `signInWithGoogle()`
+- `signOut()`
+- `updateUserProfile(...)`
+- `createPlayerGroup(...)`
+- `selectPlayerGroup(...)`
+- `sharePlayerGroup(...)`
+- `followUser(...)`
+- `handleHit(...)`
+- `undoLastHit()`
+- `addMiss()`
+- `commitTurn()`
+- `updateSettings(...)`
+- `startNewMatch()`
 
-### `_MobileTopBar`
+### `PlayScreen`
 
-Mobile-only top header.
+Located at `lib/screens/play_screen.dart`.
 
-Contains:
+Main gameplay surface with current turn header, dartboard, and turn action buttons.
 
-- app logo
-- `Target Point` title
-- `Darts scorer` subtitle
-- search icon placeholder
-- new match/reset icon
-- profile avatar with current player's initial
+### `SettingsScreen`
 
-The search action is currently a placeholder.
-
-### `_BoardPanel`
-
-Main game area.
+Located at `lib/screens/settings_screen.dart`.
 
 Contains:
 
-- `_CurrentTurnHeader`
-- clickable `Dartboard`
-- action row with `Undo`, `Miss`, `Save turn`
+- player group preset selector
+- create player group dialog
+- share selected group action
+- game mode/rules
+- player lineup management
 
-### `_CurrentTurnHeader`
+### `AccountScreen`
 
-Displays:
-
-- current player name
-- current remaining score
-- three dart slots
-- turn total
-- match or bust message
-
-### `_ControlPanel`
-
-Settings and players panel.
+Located at `lib/screens/account_screen.dart`.
 
 Contains:
 
-- optional header on desktop
-- game mode segmented control
-- starting score chips
-- finish rule segmented control
-- player cards
-- local session status text
-
-On mobile, the title header is hidden because `_MobileTopBar` already shows the app identity.
+- user/guest profile card
+- user profile edit panel
+- Google login action
+- guest/sign-out state
+- following input/list
+- shared player groups list
+- session stats
+- app preferences/about
 
 ### `Dartboard`
 
@@ -276,6 +350,8 @@ Current tests in `test/widget_test.dart` cover:
 - undoing a pending hit
 - rendering on a narrow mobile viewport
 - rendering with system dark theme
+- keeping app user profile separate from active match player
+- creating/selecting player group presets
 
 Run:
 
@@ -286,21 +362,19 @@ flutter test
 
 ## Known Limitations
 
-- No persistence yet.
-- No editable players yet.
-- No match history yet.
-- No authentication yet.
-- Search button has no behavior.
-- Match state is in one stateful widget and should eventually be extracted once persistence or more screens are added.
+- Firebase config is not committed yet.
+- Google login needs Firebase platform setup to work on devices.
+- Firestore save/share/follow methods are scaffolded but do not load remote data yet.
+- Guest data is still session-local.
+- Email/password authentication is not implemented yet.
 
 ## Preferred Next Implementation Order
 
-1. Extract models and scoring logic from `lib/main.dart` into smaller files.
-2. Add editable local players.
-3. Add local match history.
-4. Add match presets.
-5. Add storage.
-6. Add account/login flow.
-7. Add cloud sync.
+1. Add Firebase platform configuration files/options.
+2. Add Firestore loading for user profile, player groups, and following.
+3. Add local persistent storage for guest mode.
+4. Add email/password authentication.
+5. Add match history sync.
+6. Expand sharing permissions.
 
 Keep each change narrow and preserve working tests.

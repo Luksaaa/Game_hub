@@ -75,7 +75,9 @@ class _DartMatchScreenState extends State<DartMatchScreen> {
         builder: (context) => AlertDialog(
           backgroundColor: palette.surface,
           title: const Text('New Match?'),
-          content: const Text('This will reset the current game score. Are you sure?'),
+          content: const Text(
+            'This will reset the current game score. Are you sure?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -103,9 +105,7 @@ class _DartMatchScreenState extends State<DartMatchScreen> {
 
   void _openAccountScreen() {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => AccountScreen(controller: _controller),
-      ),
+      MaterialPageRoute(builder: (_) => AccountScreen(controller: _controller)),
     );
   }
 
@@ -146,7 +146,9 @@ class _DartMatchScreenState extends State<DartMatchScreen> {
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          border: Border(right: BorderSide(color: palette.border)),
+                          border: Border(
+                            right: BorderSide(color: palette.border),
+                          ),
                         ),
                         child: NavigationRail(
                           backgroundColor: palette.surface,
@@ -163,7 +165,11 @@ class _DartMatchScreenState extends State<DartMatchScreen> {
                                   color: palette.primary,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(Icons.adjust, color: Colors.white, size: 28),
+                                child: const Icon(
+                                  Icons.adjust,
+                                  color: Colors.white,
+                                  size: 28,
+                                ),
                               ),
                               const SizedBox(height: 8),
                               Text(
@@ -205,12 +211,19 @@ class _DartMatchScreenState extends State<DartMatchScreen> {
                                       height: 38,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        border: Border.all(color: palette.primary, width: 2),
-                                        color: Color(_controller.currentPlayer.avatarColorValue),
+                                        border: Border.all(
+                                          color: palette.primary,
+                                          width: 2,
+                                        ),
+                                        color: Color(
+                                          _controller
+                                              .currentUser
+                                              .avatarColorValue,
+                                        ),
                                       ),
                                       child: Center(
                                         child: Text(
-                                          _controller.currentPlayer.name.substring(0, 1).toUpperCase(),
+                                          _controller.currentUser.initials,
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.w900,
@@ -228,22 +241,34 @@ class _DartMatchScreenState extends State<DartMatchScreen> {
                           destinations: [
                             NavigationRailDestination(
                               icon: const Icon(Icons.play_circle_outline),
-                              selectedIcon: Icon(Icons.play_circle, color: palette.primary),
+                              selectedIcon: Icon(
+                                Icons.play_circle,
+                                color: palette.primary,
+                              ),
                               label: const Text('Play'),
                             ),
                             NavigationRailDestination(
                               icon: const Icon(Icons.bar_chart_outlined),
-                              selectedIcon: Icon(Icons.bar_chart, color: palette.primary),
+                              selectedIcon: Icon(
+                                Icons.bar_chart,
+                                color: palette.primary,
+                              ),
                               label: const Text('Scores'),
                             ),
                             NavigationRailDestination(
                               icon: const Icon(Icons.settings_outlined),
-                              selectedIcon: Icon(Icons.settings, color: palette.primary),
+                              selectedIcon: Icon(
+                                Icons.settings,
+                                color: palette.primary,
+                              ),
                               label: const Text('Settings'),
                             ),
                             NavigationRailDestination(
                               icon: const Icon(Icons.history_outlined),
-                              selectedIcon: Icon(Icons.history, color: palette.primary),
+                              selectedIcon: Icon(
+                                Icons.history,
+                                color: palette.primary,
+                              ),
                               label: const Text('History'),
                             ),
                           ],
@@ -273,7 +298,11 @@ class _DartMatchScreenState extends State<DartMatchScreen> {
                           color: palette.primary,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(Icons.adjust, color: Colors.white, size: 24),
+                        child: const Icon(
+                          Icons.adjust,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                       ),
                     ),
                     title: Column(
@@ -316,12 +345,17 @@ class _DartMatchScreenState extends State<DartMatchScreen> {
                             height: 36,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: palette.primary, width: 2.5),
-                              color: Color(_controller.currentPlayer.avatarColorValue),
+                              border: Border.all(
+                                color: palette.primary,
+                                width: 2.5,
+                              ),
+                              color: Color(
+                                _controller.currentUser.avatarColorValue,
+                              ),
                             ),
                             child: Center(
                               child: Text(
-                                _controller.currentPlayer.name.substring(0, 1).toUpperCase(),
+                                _controller.currentUser.initials,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w900,
@@ -346,8 +380,12 @@ class _DartMatchScreenState extends State<DartMatchScreen> {
                     backgroundColor: palette.surface,
                     selectedItemColor: palette.primary,
                     unselectedItemColor: palette.textMuted,
-                    selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
-                    unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                    selectedLabelStyle: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                    ),
                     items: const [
                       BottomNavigationBarItem(
                         icon: Icon(Icons.play_circle_outline),

@@ -16,6 +16,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _playerNameController = TextEditingController();
+  final TextEditingController _groupNameController = TextEditingController();
   int _newPlayerColor = 0xFF0F8B6B; // Default emerald
 
   final List<int> _colorOptions = const [
@@ -30,14 +31,161 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     _playerNameController.dispose();
+    _groupNameController.dispose();
     super.dispose();
+  }
+
+  void _showCreateGroupDialog() {
+    final palette = AppPalette.of(context);
+    final theme = Theme.of(context);
+    _groupNameController.clear();
+    final selectedNames = widget.controller.players
+        .map((player) => player.name)
+        .toSet();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Dialog(
+              backgroundColor: palette.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: palette.border),
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 460),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Create Player Group',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: palette.text,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _groupNameController,
+                        decoration: InputDecoration(
+                          labelText: 'Group Name',
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(
+                              color: palette.primary,
+                              width: 2,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: palette.border),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        style: TextStyle(
+                          color: palette.text,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Players',
+                        style: TextStyle(
+                          color: palette.textMuted,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Flexible(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            children: widget.controller.profiles.map((profile) {
+                              final isSelected = selectedNames.contains(
+                                profile.name,
+                              );
+                              return CheckboxListTile(
+                                value: isSelected,
+                                activeColor: palette.primary,
+                                checkColor: Colors.white,
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(
+                                  profile.name,
+                                  style: TextStyle(
+                                    color: palette.text,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                secondary: CircleAvatar(
+                                  backgroundColor: Color(
+                                    profile.avatarColorValue,
+                                  ),
+                                  foregroundColor: Colors.white,
+                                  child: Text(
+                                    profile.name.substring(0, 1).toUpperCase(),
+                                  ),
+                                ),
+                                onChanged: (checked) {
+                                  setModalState(() {
+                                    if (checked ?? false) {
+                                      selectedNames.add(profile.name);
+                                    } else {
+                                      selectedNames.remove(profile.name);
+                                    }
+                                  });
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text(
+                              'Cancel',
+                              style: TextStyle(color: palette.textMuted),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: palette.primary,
+                            ),
+                            onPressed: () {
+                              widget.controller.createPlayerGroup(
+                                _groupNameController.text,
+                                selectedNames.toList(),
+                              );
+                              Navigator.of(context).pop();
+                            },
+                            child: const Text('Save Group'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   void _showAddPlayerDialog() {
     final palette = AppPalette.of(context);
     final theme = Theme.of(context);
     _playerNameController.clear();
-    
+
     showDialog(
       context: context,
       builder: (context) {
@@ -68,7 +216,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       decoration: InputDecoration(
                         labelText: 'Player Name',
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: palette.primary, width: 2),
+                          borderSide: BorderSide(
+                            color: palette.primary,
+                            width: 2,
+                          ),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         enabledBorder: OutlineInputBorder(
@@ -76,12 +227,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      style: TextStyle(color: palette.text, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: palette.text,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       'Select Avatar Color',
-                      style: TextStyle(color: palette.textMuted, fontWeight: FontWeight.bold, fontSize: 13),
+                      style: TextStyle(
+                        color: palette.textMuted,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -105,7 +263,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   : null,
                             ),
                             child: isSelected
-                                ? const Icon(Icons.check, color: Colors.white, size: 18)
+                                ? const Icon(
+                                    Icons.check,
+                                    color: Colors.white,
+                                    size: 18,
+                                  )
                                 : null,
                           ),
                         );
@@ -117,15 +279,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       children: [
                         TextButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          child: Text('Cancel', style: TextStyle(color: palette.textMuted)),
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(color: palette.textMuted),
+                          ),
                         ),
                         const SizedBox(width: 8),
                         FilledButton(
-                          style: FilledButton.styleFrom(backgroundColor: palette.primary),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: palette.primary,
+                          ),
                           onPressed: () {
                             final name = _playerNameController.text.trim();
                             if (name.isNotEmpty) {
-                              widget.controller.addPlayerProfile(name, _newPlayerColor);
+                              widget.controller.addPlayerProfile(
+                                name,
+                                _newPlayerColor,
+                              );
                               Navigator.of(context).pop();
                             }
                           },
@@ -145,7 +315,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _confirmSettingsChange(VoidCallback onChange) {
     // If a match is already under way (some throws made), confirm first
-    final hasMatchStarted = widget.controller.players.any((p) => p.turns.isNotEmpty);
+    final hasMatchStarted = widget.controller.players.any(
+      (p) => p.turns.isNotEmpty,
+    );
 
     if (hasMatchStarted) {
       final palette = AppPalette.of(context);
@@ -199,7 +371,113 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ),
-          
+
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: palette.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: palette.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Player Groups',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              color: palette.text,
+                            ),
+                          ),
+                          Text(
+                            'Pick a saved crew for this match.',
+                            style: TextStyle(
+                              color: palette.textMuted,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton.filled(
+                      style: IconButton.styleFrom(
+                        backgroundColor: palette.primary,
+                      ),
+                      tooltip: 'Create group',
+                      onPressed: _showCreateGroupDialog,
+                      icon: const Icon(Icons.group_add),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: widget.controller.playerGroups.map((group) {
+                    final isSelected =
+                        group.id == widget.controller.selectedPlayerGroupId;
+                    return ChoiceChip(
+                      label: Text(group.name),
+                      selected: isSelected,
+                      selectedColor: palette.primarySoft,
+                      labelStyle: TextStyle(
+                        color: isSelected ? palette.primary : palette.text,
+                        fontWeight: FontWeight.w900,
+                      ),
+                      avatar: Icon(
+                        group.isShared ? Icons.public : Icons.group,
+                        size: 18,
+                        color: isSelected ? palette.primary : palette.textMuted,
+                      ),
+                      onSelected: (_) {
+                        _confirmSettingsChange(() {
+                          widget.controller.selectPlayerGroup(group.id);
+                        });
+                      },
+                    );
+                  }).toList(),
+                ),
+                if (widget.controller.selectedPlayerGroup != null) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          widget.controller.selectedPlayerGroup!.playerNames
+                              .join(', '),
+                          style: TextStyle(
+                            color: palette.textMuted,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: () => widget.controller.sharePlayerGroup(
+                          widget.controller.selectedPlayerGroup!.id,
+                        ),
+                        icon: const Icon(Icons.ios_share, size: 18),
+                        label: Text(
+                          widget.controller.selectedPlayerGroup!.isShared
+                              ? 'Shared'
+                              : 'Share',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
           // Game Mode & Rules Card
           Container(
             padding: const EdgeInsets.all(16),
@@ -215,7 +493,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 SegmentedButton<GameMode>(
                   segments: const [
                     ButtonSegment(value: GameMode.x01, label: Text('X01')),
-                    ButtonSegment(value: GameMode.countUp, label: Text('Count Up')),
+                    ButtonSegment(
+                      value: GameMode.countUp,
+                      label: Text('Count Up'),
+                    ),
                   ],
                   selected: {settings.mode},
                   onSelectionChanged: (selection) {
@@ -225,7 +506,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
-                
+
                 if (settings.mode == GameMode.x01) ...[
                   _SectionTitle(title: 'Starting Score', palette: palette),
                   Wrap(
@@ -242,25 +523,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                         onSelected: (_) {
                           _confirmSettingsChange(() {
-                            widget.controller.updateSettings(startingScore: score);
+                            widget.controller.updateSettings(
+                              startingScore: score,
+                            );
                           });
                         },
                       );
                     }).toList(),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   _SectionTitle(title: 'Finish Rule', palette: palette),
                   SegmentedButton<OutRule>(
                     segments: const [
-                      ButtonSegment(value: OutRule.singleOut, label: Text('Single')),
-                      ButtonSegment(value: OutRule.doubleOut, label: Text('Double')),
-                      ButtonSegment(value: OutRule.masterOut, label: Text('Master')),
+                      ButtonSegment(
+                        value: OutRule.singleOut,
+                        label: Text('Single'),
+                      ),
+                      ButtonSegment(
+                        value: OutRule.doubleOut,
+                        label: Text('Double'),
+                      ),
+                      ButtonSegment(
+                        value: OutRule.masterOut,
+                        label: Text('Master'),
+                      ),
                     ],
                     selected: {settings.outRule},
                     onSelectionChanged: (selection) {
                       _confirmSettingsChange(() {
-                        widget.controller.updateSettings(outRule: selection.first);
+                        widget.controller.updateSettings(
+                          outRule: selection.first,
+                        );
                       });
                     },
                   ),
@@ -269,7 +563,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          
+
           // Players List & Management
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -291,12 +585,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 onPressed: _showAddPlayerDialog,
                 icon: const Icon(Icons.person_add, size: 18),
-                label: const Text('Add Player', style: TextStyle(fontWeight: FontWeight.bold)),
+                label: const Text(
+                  'Add Player',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          
+
           Container(
             padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
@@ -312,11 +609,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onReorder: widget.controller.reorderPlayers,
                 itemBuilder: (context, index) {
                   final player = players[index];
-                  
+
                   return Card(
                     key: ValueKey(player.name),
                     elevation: 0,
-                    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     color: palette.surfaceMuted,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -339,26 +639,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       subtitle: Text(
                         'Tap to edit stats',
-                        style: TextStyle(color: palette.textMuted, fontSize: 11),
+                        style: TextStyle(
+                          color: palette.textMuted,
+                          fontSize: 11,
+                        ),
                       ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            icon: Icon(Icons.delete_outline, color: palette.textMuted),
+                            icon: Icon(
+                              Icons.delete_outline,
+                              color: palette.textMuted,
+                            ),
                             onPressed: players.length > 1
                                 ? () => widget.controller.deletePlayer(index)
                                 : null,
                           ),
                           ReorderableDragStartListener(
                             index: index,
-                            child: const Icon(Icons.drag_handle, color: Colors.grey),
+                            child: const Icon(
+                              Icons.drag_handle,
+                              color: Colors.grey,
+                            ),
                           ),
                         ],
                       ),
                       onTap: () {
                         // Open profile dialog to view details
-                        final pIndex = widget.controller.profiles.indexWhere((p) => p.name == player.name);
+                        final pIndex = widget.controller.profiles.indexWhere(
+                          (p) => p.name == player.name,
+                        );
                         if (pIndex != -1) {
                           showDialog(
                             context: context,

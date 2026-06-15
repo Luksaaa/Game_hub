@@ -7,11 +7,7 @@ import '../theme/app_palette.dart';
 import '../widgets/dartboard.dart';
 
 class PlayScreen extends StatefulWidget {
-  const PlayScreen({
-    required this.controller,
-    required this.isWide,
-    super.key,
-  });
+  const PlayScreen({required this.controller, required this.isWide, super.key});
 
   final GameStateController controller;
   final bool isWide;
@@ -42,7 +38,10 @@ class _PlayScreenState extends State<PlayScreen> {
             const SizedBox(width: 8),
             Text(
               'Save turn?',
-              style: TextStyle(color: palette.text, fontWeight: FontWeight.w900),
+              style: TextStyle(
+                color: palette.text,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ],
         ),
@@ -85,20 +84,28 @@ class _PlayScreenState extends State<PlayScreen> {
             },
             child: Text(
               'Redo Last Dart',
-              style: TextStyle(color: palette.textMuted, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: palette.textMuted,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           FilledButton.icon(
             style: FilledButton.styleFrom(
               backgroundColor: palette.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () {
               Navigator.of(ctx).pop();
               controller.commitTurn();
             },
             icon: const Icon(Icons.check, size: 16),
-            label: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
+            label: const Text(
+              'Save',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -118,7 +125,7 @@ class _PlayScreenState extends State<PlayScreen> {
     final chips = List.generate(3, (index) {
       final hit = index < hits.length ? hits[index] : null;
       final isActive = index == hits.length && !controller.matchFinished;
-      
+
       return Expanded(
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -127,14 +134,16 @@ class _PlayScreenState extends State<PlayScreen> {
           decoration: BoxDecoration(
             color: hit == null
                 ? (isActive
-                    ? palette.primarySoft.withValues(alpha: 0.5)
-                    : palette.surface.withValues(alpha: 0.15))
+                      ? palette.primarySoft.withValues(alpha: 0.5)
+                      : palette.surface.withValues(alpha: 0.15))
                 : palette.primarySoft,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isActive
                   ? palette.accent
-                  : (hit != null ? palette.primary : palette.border.withValues(alpha: 0.3)),
+                  : (hit != null
+                        ? palette.primary
+                        : palette.border.withValues(alpha: 0.3)),
               width: isActive ? 2 : 1,
             ),
           ),
@@ -143,7 +152,9 @@ class _PlayScreenState extends State<PlayScreen> {
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w800,
               color: hit == null
-                  ? (isActive ? palette.accent : palette.text.withValues(alpha: 0.4))
+                  ? (isActive
+                        ? palette.accent
+                        : palette.text.withValues(alpha: 0.4))
                   : palette.primary,
             ),
           ),
@@ -168,7 +179,7 @@ class _PlayScreenState extends State<PlayScreen> {
             color: palette.primary.withValues(alpha: 0.25),
             blurRadius: 10,
             offset: const Offset(0, 4),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -218,10 +229,11 @@ class _PlayScreenState extends State<PlayScreen> {
           ),
           const SizedBox(height: 14),
           Row(
-            children: chips
-                .expand((chip) => [chip, const SizedBox(width: 8)])
-                .toList()
-              ..removeLast(),
+            children:
+                chips
+                    .expand((chip) => [chip, const SizedBox(width: 8)])
+                    .toList()
+                  ..removeLast(),
           ),
           const SizedBox(height: 12),
           Row(
@@ -269,7 +281,7 @@ class _PlayScreenState extends State<PlayScreen> {
                       color: Colors.black.withValues(alpha: 0.15),
                       blurRadius: 15,
                       spreadRadius: 2,
-                    )
+                    ),
                   ],
                 ),
                 child: Dartboard(
@@ -331,7 +343,10 @@ class _PlayScreenState extends State<PlayScreen> {
           const SizedBox(width: 20),
           Expanded(
             flex: 4,
-            child: _QuickScoreboardPanel(controller: controller, palette: palette),
+            child: _QuickScoreboardPanel(
+              controller: controller,
+              palette: palette,
+            ),
           ),
         ],
       );
@@ -364,7 +379,9 @@ class _ActionButton extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 14),
           side: BorderSide(
-            color: onPressed != null ? palette.primary : palette.border.withValues(alpha: 0.3),
+            color: onPressed != null
+                ? palette.primary
+                : palette.border.withValues(alpha: 0.3),
             width: 1.5,
           ),
           shape: RoundedRectangleBorder(
@@ -391,9 +408,7 @@ class _ActionButton extends StatelessWidget {
         disabledForegroundColor: palette.textMuted.withValues(alpha: 0.5),
         elevation: 2,
         shadowColor: palette.primary.withValues(alpha: 0.3),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       icon: Icon(icon, size: 20),
       label: Text(
@@ -445,7 +460,10 @@ class _QuickScoreboardPanel extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: palette.primarySoft,
                   borderRadius: BorderRadius.circular(20),
@@ -476,7 +494,9 @@ class _QuickScoreboardPanel extends StatelessWidget {
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isCurrent ? palette.primarySoft : palette.surfaceMuted,
+                    color: isCurrent
+                        ? palette.primarySoft
+                        : palette.surfaceMuted,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isCurrent ? palette.primary : palette.border,
@@ -491,7 +511,10 @@ class _QuickScoreboardPanel extends StatelessWidget {
                         radius: 18,
                         child: Text(
                           player.name.substring(0, 1).toUpperCase(),
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -537,7 +560,7 @@ class _QuickScoreboardPanel extends StatelessWidget {
               color: palette.textMuted,
               fontWeight: FontWeight.bold,
             ),
-          )
+          ),
         ],
       ),
     );

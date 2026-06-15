@@ -23,33 +23,35 @@ class _AccountScreenState extends State<AccountScreen> {
   ];
 
   late TextEditingController _nameController;
+  final TextEditingController _followController = TextEditingController();
   late int _selectedColor;
   bool _isEditingProfile = false;
 
   @override
   void initState() {
     super.initState();
-    final cur = widget.controller.currentPlayer;
-    final profile = widget.controller.profiles.firstWhere(
-      (p) => p.name == cur.name,
-      orElse: () => widget.controller.profiles.first,
-    );
-    _nameController = TextEditingController(text: profile.name);
-    _selectedColor = profile.avatarColorValue;
+    final user = widget.controller.currentUser;
+    _nameController = TextEditingController(text: user.displayName);
+    _selectedColor = user.avatarColorValue;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _followController.dispose();
     super.dispose();
   }
 
   void _saveProfile() {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
-    final cur = widget.controller.currentPlayer;
-    widget.controller.updatePlayerProfile(cur.name, name, _selectedColor);
+    widget.controller.updateUserProfile(name, _selectedColor);
     setState(() => _isEditingProfile = false);
+  }
+
+  void _followUser() {
+    widget.controller.followUser(_followController.text);
+    _followController.clear();
   }
 
   @override
@@ -60,9 +62,12 @@ class _AccountScreenState extends State<AccountScreen> {
     return ListenableBuilder(
       listenable: widget.controller,
       builder: (context, _) {
-        final cur = widget.controller.currentPlayer;
+        final user = widget.controller.currentUser;
         final profiles = widget.controller.profiles;
-        final totalMatches = profiles.fold<int>(0, (sum, p) => sum + p.matchesPlayed);
+        final totalMatches = profiles.fold<int>(
+          0,
+          (sum, p) => sum + p.matchesPlayed,
+        );
         final totalWins = profiles.fold<int>(0, (sum, p) => sum + p.matchesWon);
 
         return Scaffold(
@@ -116,12 +121,12 @@ class _AccountScreenState extends State<AccountScreen> {
                       height: 64,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Color(cur.avatarColorValue),
+                        color: Color(user.avatarColorValue),
                         border: Border.all(color: Colors.white30, width: 3),
                       ),
                       child: Center(
                         child: Text(
-                          cur.name.substring(0, 1).toUpperCase(),
+                          user.initials,
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w900,
@@ -136,7 +141,7 @@ class _AccountScreenState extends State<AccountScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            cur.name,
+                            user.displayName,
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w900,
@@ -145,14 +150,17 @@ class _AccountScreenState extends State<AccountScreen> {
                           ),
                           const SizedBox(height: 4),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 3,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.18),
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: const Text(
-                              'Guest Session',
-                              style: TextStyle(
+                            child: Text(
+                              user.isGuest ? 'Guest Session' : 'Signed In',
+                              style: const TextStyle(
                                 color: Colors.white70,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 12,
@@ -163,8 +171,14 @@ class _AccountScreenState extends State<AccountScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.white70, size: 20),
-                      onPressed: () => setState(() => _isEditingProfile = !_isEditingProfile),
+                      icon: const Icon(
+                        Icons.edit,
+                        color: Colors.white70,
+                        size: 20,
+                      ),
+                      onPressed: () => setState(
+                        () => _isEditingProfile = !_isEditingProfile,
+                      ),
                       tooltip: 'Edit Profile',
                     ),
                   ],
@@ -181,9 +195,11 @@ class _AccountScreenState extends State<AccountScreen> {
                         selectedColor: _selectedColor,
                         colorOptions: _colorOptions,
                         palette: palette,
-                        onColorSelected: (c) => setState(() => _selectedColor = c),
+                        onColorSelected: (c) =>
+                            setState(() => _selectedColor = c),
                         onSave: _saveProfile,
-                        onCancel: () => setState(() => _isEditingProfile = false),
+                        onCancel: () =>
+                            setState(() => _isEditingProfile = false),
                       )
                     : const SizedBox.shrink(),
               ),
@@ -205,9 +221,13 @@ class _AccountScreenState extends State<AccountScreen> {
                     _LoginOptionTile(
                       icon: Icons.g_mobiledata_rounded,
                       iconColor: const Color(0xFF4285F4),
-                      label: 'Continue with Google',
+                      label: widget.controller.isSigningIn
+                          ? 'Signing in...'
+                          : 'Continue with Google',
                       palette: palette,
-                      onTap: () => _showComingSoon(context, palette),
+                      onTap: widget.controller.isSigningIn
+                          ? null
+                          : widget.controller.signInWithGoogle,
                     ),
                     Divider(height: 1, color: palette.border),
                     _LoginOptionTile(
@@ -223,12 +243,26 @@ class _AccountScreenState extends State<AccountScreen> {
                       iconColor: palette.textMuted,
                       label: 'Continue as Guest',
                       palette: palette,
-                      isActive: true,
-                      onTap: null, // already a guest
+                      isActive: user.isGuest,
+                      onTap: user.isGuest ? null : widget.controller.signOut,
                     ),
                   ],
                 ),
               ),
+              if (widget.controller.accountMessage != null) ...[
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Text(
+                    widget.controller.accountMessage!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: palette.textMuted,
+                      height: 1.4,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
 
               const SizedBox(height: 10),
               Padding(
@@ -244,11 +278,160 @@ class _AccountScreenState extends State<AccountScreen> {
 
               const SizedBox(height: 24),
 
+              _SectionHeader(title: 'Following', palette: palette),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: palette.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: palette.border),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _followController,
+                            decoration: InputDecoration(
+                              hintText: 'Add user handle or name',
+                              hintStyle: TextStyle(color: palette.textMuted),
+                              isDense: true,
+                              enabledBorder: OutlineInputBorder(
+                                borderSide: BorderSide(color: palette.border),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderSide: BorderSide(
+                                  color: palette.primary,
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            style: TextStyle(
+                              color: palette.text,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            onSubmitted: (_) => _followUser(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton.filled(
+                          style: IconButton.styleFrom(
+                            backgroundColor: palette.primary,
+                          ),
+                          onPressed: _followUser,
+                          icon: const Icon(Icons.person_add_alt_1),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (widget.controller.following.isEmpty)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'No followed users yet.',
+                          style: TextStyle(
+                            color: palette.textMuted,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      )
+                    else
+                      ...widget.controller.following.map(
+                        (followed) => ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          leading: CircleAvatar(
+                            backgroundColor: palette.primarySoft,
+                            foregroundColor: palette.primary,
+                            child: Text(
+                              followed.displayName
+                                  .substring(0, 1)
+                                  .toUpperCase(),
+                            ),
+                          ),
+                          title: Text(
+                            followed.displayName,
+                            style: TextStyle(
+                              color: palette.text,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          subtitle: Text(
+                            followed.handle,
+                            style: TextStyle(color: palette.textMuted),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              _SectionHeader(title: 'Shared Player Groups', palette: palette),
+              const SizedBox(height: 10),
+              Container(
+                decoration: BoxDecoration(
+                  color: palette.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: palette.border),
+                ),
+                child: Column(
+                  children: widget.controller.playerGroups.map((group) {
+                    return ListTile(
+                      leading: Icon(
+                        group.isShared ? Icons.group : Icons.group_outlined,
+                        color: group.isShared
+                            ? palette.primary
+                            : palette.textMuted,
+                      ),
+                      title: Text(
+                        group.name,
+                        style: TextStyle(
+                          color: palette.text,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Text(
+                        group.playerNames.join(', '),
+                        style: TextStyle(
+                          color: palette.textMuted,
+                          fontSize: 12,
+                        ),
+                      ),
+                      trailing: group.isShared
+                          ? Text(
+                              'Shared',
+                              style: TextStyle(
+                                color: palette.primary,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 12,
+                              ),
+                            )
+                          : TextButton(
+                              onPressed: () =>
+                                  widget.controller.sharePlayerGroup(group.id),
+                              child: const Text('Share'),
+                            ),
+                    );
+                  }).toList(),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
               // ── Session Stats ─────────────────────────────
               _SectionHeader(title: 'Session Stats', palette: palette),
               const SizedBox(height: 10),
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 16,
+                  horizontal: 12,
+                ),
                 decoration: BoxDecoration(
                   color: palette.surface,
                   borderRadius: BorderRadius.circular(16),
@@ -257,9 +440,17 @@ class _AccountScreenState extends State<AccountScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _StatBox(label: 'Matches', value: '$totalMatches', palette: palette),
+                    _StatBox(
+                      label: 'Matches',
+                      value: '$totalMatches',
+                      palette: palette,
+                    ),
                     Container(width: 1, height: 40, color: palette.border),
-                    _StatBox(label: 'Wins', value: '$totalWins', palette: palette),
+                    _StatBox(
+                      label: 'Wins',
+                      value: '$totalWins',
+                      palette: palette,
+                    ),
                     Container(width: 1, height: 40, color: palette.border),
                     _StatBox(
                       label: 'History',
@@ -268,8 +459,8 @@ class _AccountScreenState extends State<AccountScreen> {
                     ),
                     Container(width: 1, height: 40, color: palette.border),
                     _StatBox(
-                      label: 'Players',
-                      value: '${widget.controller.profiles.length}',
+                      label: 'Groups',
+                      value: '${widget.controller.playerGroups.length}',
                       palette: palette,
                     ),
                   ],
@@ -290,10 +481,22 @@ class _AccountScreenState extends State<AccountScreen> {
                 child: Column(
                   children: [
                     ListTile(
-                      leading: Icon(Icons.brightness_auto_outlined, color: palette.primary),
-                      title: Text('Theme', style: TextStyle(color: palette.text, fontWeight: FontWeight.bold)),
+                      leading: Icon(
+                        Icons.brightness_auto_outlined,
+                        color: palette.primary,
+                      ),
+                      title: Text(
+                        'Theme',
+                        style: TextStyle(
+                          color: palette.text,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       trailing: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: palette.primarySoft,
                           borderRadius: BorderRadius.circular(20),
@@ -309,15 +512,30 @@ class _AccountScreenState extends State<AccountScreen> {
                       ),
                       subtitle: Text(
                         'Follows your device theme',
-                        style: TextStyle(color: palette.textMuted, fontSize: 12),
+                        style: TextStyle(
+                          color: palette.textMuted,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                     Divider(height: 1, color: palette.border),
                     ListTile(
-                      leading: Icon(Icons.storage_outlined, color: palette.primary),
-                      title: Text('Storage', style: TextStyle(color: palette.text, fontWeight: FontWeight.bold)),
+                      leading: Icon(
+                        Icons.storage_outlined,
+                        color: palette.primary,
+                      ),
+                      title: Text(
+                        'Storage',
+                        style: TextStyle(
+                          color: palette.text,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       trailing: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: palette.primarySoft,
                           borderRadius: BorderRadius.circular(20),
@@ -332,8 +550,13 @@ class _AccountScreenState extends State<AccountScreen> {
                         ),
                       ),
                       subtitle: Text(
-                        'Data cleared on app restart',
-                        style: TextStyle(color: palette.textMuted, fontSize: 12),
+                        widget.controller.cloudFeaturesAvailable
+                            ? 'Firebase ready'
+                            : 'Guest/local until Firebase is configured',
+                        style: TextStyle(
+                          color: palette.textMuted,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ],
@@ -355,32 +578,68 @@ class _AccountScreenState extends State<AccountScreen> {
                   children: [
                     ListTile(
                       leading: Icon(Icons.info_outline, color: palette.primary),
-                      title: Text('Target Point', style: TextStyle(color: palette.text, fontWeight: FontWeight.bold)),
+                      title: Text(
+                        'Target Point',
+                        style: TextStyle(
+                          color: palette.text,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       trailing: Text(
                         'v1.0.0',
-                        style: TextStyle(color: palette.textMuted, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: palette.textMuted,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       subtitle: Text(
                         'Dart scoring app',
-                        style: TextStyle(color: palette.textMuted, fontSize: 12),
+                        style: TextStyle(
+                          color: palette.textMuted,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                     Divider(height: 1, color: palette.border),
                     ListTile(
                       leading: Icon(Icons.star_outline, color: palette.accent),
-                      title: Text('Rate the App', style: TextStyle(color: palette.text, fontWeight: FontWeight.bold)),
-                      trailing: Icon(Icons.chevron_right, color: palette.textMuted),
+                      title: Text(
+                        'Rate the App',
+                        style: TextStyle(
+                          color: palette.text,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: palette.textMuted,
+                      ),
                       subtitle: Text(
                         'Leave a review on the store',
-                        style: TextStyle(color: palette.textMuted, fontSize: 12),
+                        style: TextStyle(
+                          color: palette.textMuted,
+                          fontSize: 12,
+                        ),
                       ),
                       onTap: () => _showComingSoon(context, palette),
                     ),
                     Divider(height: 1, color: palette.border),
                     ListTile(
-                      leading: Icon(Icons.bug_report_outlined, color: palette.textMuted),
-                      title: Text('Send Feedback', style: TextStyle(color: palette.text, fontWeight: FontWeight.bold)),
-                      trailing: Icon(Icons.chevron_right, color: palette.textMuted),
+                      leading: Icon(
+                        Icons.bug_report_outlined,
+                        color: palette.textMuted,
+                      ),
+                      title: Text(
+                        'Send Feedback',
+                        style: TextStyle(
+                          color: palette.text,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      trailing: Icon(
+                        Icons.chevron_right,
+                        color: palette.textMuted,
+                      ),
                       onTap: () => _showComingSoon(context, palette),
                     ),
                   ],
@@ -391,8 +650,14 @@ class _AccountScreenState extends State<AccountScreen> {
 
               Center(
                 child: Text(
-                  'Guest session · Local storage only',
-                  style: TextStyle(color: palette.textMuted, fontSize: 11, fontWeight: FontWeight.bold),
+                  user.isGuest
+                      ? 'Guest session · Local storage only'
+                      : 'Signed in · Cloud sync ready',
+                  style: TextStyle(
+                    color: palette.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -406,7 +671,10 @@ class _AccountScreenState extends State<AccountScreen> {
   void _showComingSoon(BuildContext context, AppPalette palette) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Coming soon!', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text(
+          'Coming soon!',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: palette.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -495,7 +763,11 @@ class _LoginOptionTile extends StatelessWidget {
 }
 
 class _StatBox extends StatelessWidget {
-  const _StatBox({required this.label, required this.value, required this.palette});
+  const _StatBox({
+    required this.label,
+    required this.value,
+    required this.palette,
+  });
   final String label;
   final String value;
   final AppPalette palette;
@@ -558,7 +830,7 @@ class _ProfileEditPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Edit Current Player',
+            'Edit User Profile',
             style: TextStyle(
               color: palette.textMuted,
               fontWeight: FontWeight.w900,
@@ -570,7 +842,7 @@ class _ProfileEditPanel extends StatelessWidget {
           TextField(
             controller: nameController,
             decoration: InputDecoration(
-              labelText: 'Player Name',
+              labelText: 'Profile Name',
               labelStyle: TextStyle(color: palette.textMuted),
               focusedBorder: OutlineInputBorder(
                 borderSide: BorderSide(color: palette.primary, width: 2),
@@ -586,7 +858,11 @@ class _ProfileEditPanel extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'Avatar Color',
-            style: TextStyle(color: palette.textMuted, fontWeight: FontWeight.bold, fontSize: 12),
+            style: TextStyle(
+              color: palette.textMuted,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
           ),
           const SizedBox(height: 8),
           Row(
@@ -606,7 +882,12 @@ class _ProfileEditPanel extends StatelessWidget {
                         ? Border.all(color: palette.text, width: 3)
                         : Border.all(color: Colors.transparent, width: 3),
                     boxShadow: isSelected
-                        ? [BoxShadow(color: Color(c).withValues(alpha: 0.4), blurRadius: 8)]
+                        ? [
+                            BoxShadow(
+                              color: Color(c).withValues(alpha: 0.4),
+                              blurRadius: 8,
+                            ),
+                          ]
                         : null,
                   ),
                   child: isSelected
@@ -622,16 +903,24 @@ class _ProfileEditPanel extends StatelessWidget {
             children: [
               TextButton(
                 onPressed: onCancel,
-                child: Text('Cancel', style: TextStyle(color: palette.textMuted)),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(color: palette.textMuted),
+                ),
               ),
               const SizedBox(width: 8),
               FilledButton(
                 style: FilledButton.styleFrom(
                   backgroundColor: palette.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 onPressed: onSave,
-                child: const Text('Save', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text(
+                  'Save',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),

@@ -46,7 +46,26 @@ class Dartboard extends StatelessWidget {
 
 class DartboardGeometry {
   static const segmentNumbers = [
-    20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5
+    20,
+    1,
+    18,
+    4,
+    13,
+    6,
+    10,
+    15,
+    2,
+    17,
+    3,
+    19,
+    7,
+    16,
+    8,
+    11,
+    14,
+    9,
+    12,
+    5,
   ];
 
   static DartHit hitTest(Offset position, Size size) {
@@ -132,10 +151,7 @@ class DartboardGeometry {
 }
 
 class DartboardPainter extends CustomPainter {
-  const DartboardPainter({
-    required this.palette,
-    required this.currentTurn,
-  });
+  const DartboardPainter({required this.palette, required this.currentTurn});
 
   final AppPalette palette;
   final List<DartHit> currentTurn;
@@ -177,7 +193,7 @@ class DartboardPainter extends CustomPainter {
         sweep: segmentSweep,
         color: isEven ? palette.dartboardLight : palette.dartboardDark,
       );
-      
+
       // Triple Ring
       _drawRingSegment(
         canvas,
@@ -189,7 +205,7 @@ class DartboardPainter extends CustomPainter {
         sweep: segmentSweep,
         color: isEven ? palette.primary : const Color(0xFFC7352F),
       );
-      
+
       // Double Ring
       _drawRingSegment(
         canvas,
@@ -244,11 +260,7 @@ class DartboardPainter extends CustomPainter {
     }
 
     // Bullseye
-    canvas.drawCircle(
-      center,
-      radius * 0.12,
-      Paint()..color = palette.primary,
-    );
+    canvas.drawCircle(center, radius * 0.12, Paint()..color = palette.primary);
     canvas.drawCircle(
       center,
       radius * 0.055,
@@ -290,11 +302,7 @@ class DartboardPainter extends CustomPainter {
       );
 
       // Draw pin color center
-      canvas.drawCircle(
-        pinOffset,
-        radius * 0.018,
-        Paint()..color = pinColor,
-      );
+      canvas.drawCircle(pinOffset, radius * 0.018, Paint()..color = pinColor);
 
       // Draw a small white highlight dot inside the pin
       canvas.drawCircle(
