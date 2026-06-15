@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "452229037121-gqj5pdfs720ofmto8ssnur2ajpg8748m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.luksa.targetpoint",
+            "certificate_hash": "fa8f88332dd1823236b54fc65da5b4d4394fd2a1"
+          }
+        },
+        {
           "client_id": "452229037121-3ipplqudd4ta5prljf90d8q1a0he9iud.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -30,6 +38,13 @@
             {
               "client_id": "452229037121-3ipplqudd4ta5prljf90d8q1a0he9iud.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "452229037121-4hqih4ccfrv26ap4vbqp5hu1q7trk32v.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.luksa.targetpoint"
+              }
             }
           ]
         }
