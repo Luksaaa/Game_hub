@@ -32,7 +32,7 @@ State is currently managed by `GameStateController`, a `ChangeNotifier`. Firebas
 ## Current Features
 
 - Clickable dartboard rendered with `CustomPainter`.
-- Game hub entry screen with Darts, Table Tennis, Tennis, and Football cards.
+- Game hub entry screen with Darts plus planned cards for table, racket, field, team and cue sports.
 - Hit detection from tap coordinates.
 - X01 and Count up game modes.
 - Starting score choices: `301`, `501`, `701`.
@@ -369,7 +369,7 @@ flutter test
 - Realtime Database save/share/follow methods are scaffolded but do not load remote data yet.
 - Guest data is still session-local.
 - Email/password authentication is not implemented yet.
-- Table Tennis, Tennis, and Football currently have planned-game screens only.
+- Every game except Darts currently has a planned-game screen only.
 
 ## Preferred Next Implementation Order
 
@@ -379,6 +379,6 @@ flutter test
 4. Add match history sync.
 5. Add Firebase config for web/desktop if those platforms are supported.
 6. Expand sharing permissions.
-7. Implement scoring engines for Table Tennis, Tennis, and Football.
+7. Implement scoring engines for the planned games in the game hub.
 
 Keep each change narrow and preserve working tests.

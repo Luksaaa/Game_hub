@@ -42,6 +42,7 @@ void main() {
     expect(find.text('Table Tennis'), findsOneWidget);
     expect(find.text('Tennis'), findsOneWidget);
     expect(find.text('Football'), findsOneWidget);
+    expect(find.text('Billiards'), findsOneWidget);
   });
 
   testWidgets('records a dartboard hit in the current turn', (tester) async {

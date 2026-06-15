@@ -23,7 +23,7 @@ Target Point je Flutter aplikacija za pracenje pikado meceva. Glavni ekran koris
 - Responsive mobile i desktop layout.
 - Automatski light/dark mode prema postavkama sustava.
 - Platformske ikone za Android, iOS, macOS, web i Windows.
-- Pocetni izbor igara: Darts, Table Tennis, Tennis i Football.
+- Pocetni izbor igara: Darts, Table Tennis, Tennis, Football, Billiards, Snooker, Bowling, Badminton, Squash, Basketball, Volleyball, Handball, Golf, Hockey, Baseball, Cricket, Rugby, Foosball, Chess, Padel i Pickleball.
 
 ## Pokretanje
 
@@ -69,7 +69,7 @@ flutter test
 - Guest podaci se jos ne spremaju nakon zatvaranja aplikacije.
 - Player grupe i following imaju lokalni session fallback dok cloud nije spojen.
 - Email/password login jos nije implementiran.
-- Table Tennis, Tennis i Football su trenutno pripremljeni ekrani bez scoring logike.
+- Sve igre osim Darts su trenutno pripremljeni ekrani bez scoring logike.
 
 ## Sljedeci koraci
 
@@ -78,4 +78,4 @@ flutter test
 - Dodati ucitavanje player grupa i following liste iz Realtime Databasea.
 - Dodati email/password login.
 - Dodati detaljniju statistiku i cloud sync povijesti meceva.
-- Dodati scoring pravila za Table Tennis, Tennis i Football.
+- Dodati scoring pravila za igre iz game huba.
