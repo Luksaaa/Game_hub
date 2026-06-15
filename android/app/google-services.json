@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "452229037121",
+    "firebase_url": "https://targetpoint-c57ff-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "targetpoint-c57ff",
+    "storage_bucket": "targetpoint-c57ff.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:452229037121:android:91415d602a0e13763bdac0",
+        "android_client_info": {
+          "package_name": "com.luksa.targetpoint"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "452229037121-3ipplqudd4ta5prljf90d8q1a0he9iud.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-pxe1DMJrZVZ7BucLrBKOEhImM-wQJO4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "452229037121-3ipplqudd4ta5prljf90d8q1a0he9iud.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

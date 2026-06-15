@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'models/game_state_controller.dart';
 import 'theme/app_palette.dart';
 import 'widgets/search_dialog.dart';
+import 'screens/game_hub_screen.dart';
 import 'screens/play_screen.dart';
 import 'screens/scoreboard_screen.dart';
 import 'screens/settings_screen.dart';
@@ -31,9 +32,21 @@ class _TargetPointAppState extends State<TargetPointApp> {
       themeMode: _themeMode,
       theme: _buildTheme(Brightness.light),
       darkTheme: _buildTheme(Brightness.dark),
-      home: DartMatchScreen(
+      home: GameHubScreen(
         themeMode: _themeMode,
         onThemeModeChanged: (mode) => setState(() => _themeMode = mode),
+        onOpenDarts: (navigatorContext) {
+          Navigator.of(navigatorContext).push(
+            MaterialPageRoute(
+              builder: (_) => DartMatchScreen(
+                themeMode: _themeMode,
+                onThemeModeChanged: (mode) {
+                  setState(() => _themeMode = mode);
+                },
+              ),
+            ),
+          );
+        },
       ),
     );
   }

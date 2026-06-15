@@ -10,6 +10,7 @@ void main() {
     WidgetTester tester, {
     Size size = const Size(1200, 800),
     Brightness? brightness,
+    bool openDarts = true,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -26,7 +27,22 @@ void main() {
 
     await tester.pumpWidget(const TargetPointApp());
     await tester.pumpAndSettle();
+
+    if (openDarts) {
+      await tester.tap(find.text('Darts'));
+      await tester.pumpAndSettle();
+    }
   }
+
+  testWidgets('renders the game hub before opening darts', (tester) async {
+    await pumpApp(tester, openDarts: false);
+
+    expect(find.text('Choose a game'), findsOneWidget);
+    expect(find.text('Darts'), findsOneWidget);
+    expect(find.text('Table Tennis'), findsOneWidget);
+    expect(find.text('Tennis'), findsOneWidget);
+    expect(find.text('Football'), findsOneWidget);
+  });
 
   testWidgets('records a dartboard hit in the current turn', (tester) async {
     await pumpApp(tester);

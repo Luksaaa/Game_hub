@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>452229037121-4hqih4ccfrv26ap4vbqp5hu1q7trk32v.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.452229037121-4hqih4ccfrv26ap4vbqp5hu1q7trk32v</string>
+	<key>API_KEY</key>
+	<string>AIzaSyD0KtOE_nHZr4c5FL3dFD1alM7fXUDFBjo</string>
+	<key>GCM_SENDER_ID</key>
+	<string>452229037121</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.luksa.targetpoint</string>
+	<key>PROJECT_ID</key>
+	<string>targetpoint-c57ff</string>
+	<key>STORAGE_BUCKET</key>
+	<string>targetpoint-c57ff.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:452229037121:ios:19928e2402bbbe6e3bdac0</string>
+	<key>DATABASE_URL</key>
+	<string>https://targetpoint-c57ff-default-rtdb.europe-west1.firebasedatabase.app</string>
+</dict>
+</plist>

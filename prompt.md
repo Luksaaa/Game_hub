@@ -27,11 +27,12 @@ The app is currently split across:
 - `lib/widgets`
 - `test/widget_test.dart`
 
-State is currently managed by `GameStateController`, a `ChangeNotifier`. Firebase packages are installed, but a concrete Firebase project still needs platform config files/options before Google login and Realtime Database sync can work in a real environment.
+State is currently managed by `GameStateController`, a `ChangeNotifier`. Firebase packages are installed, Android uses `android/app/google-services.json`, and iOS uses `ios/Runner/GoogleService-Info.plist`. Both platform configs are for app id `com.luksa.targetpoint`.
 
 ## Current Features
 
 - Clickable dartboard rendered with `CustomPainter`.
+- Game hub entry screen with Darts, Table Tennis, Tennis, and Football cards.
 - Hit detection from tap coordinates.
 - X01 and Count up game modes.
 - Starting score choices: `301`, `501`, `701`.
@@ -363,19 +364,21 @@ flutter test
 
 ## Known Limitations
 
-- Firebase config is not committed yet.
-- Google login needs Firebase platform setup to work on devices.
+- Firebase config is currently present for Android and iOS only.
+- Google login is configured for Android/iOS but still depends on Firebase Console providers and Android SHA fingerprints.
 - Realtime Database save/share/follow methods are scaffolded but do not load remote data yet.
 - Guest data is still session-local.
 - Email/password authentication is not implemented yet.
+- Table Tennis, Tennis, and Football currently have planned-game screens only.
 
 ## Preferred Next Implementation Order
 
-1. Add Firebase platform configuration files/options.
-2. Add Realtime Database loading for user profile, player groups, and following.
-3. Add local persistent storage for guest mode.
-4. Add email/password authentication.
-5. Add match history sync.
+1. Add Realtime Database loading for user profile, player groups, and following.
+2. Add local persistent storage for guest mode.
+3. Add email/password authentication.
+4. Add match history sync.
+5. Add Firebase config for web/desktop if those platforms are supported.
 6. Expand sharing permissions.
+7. Implement scoring engines for Table Tennis, Tennis, and Football.
 
 Keep each change narrow and preserve working tests.

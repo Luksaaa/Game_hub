@@ -18,11 +18,12 @@ Target Point je Flutter aplikacija za pracenje pikado meceva. Glavni ekran koris
 - Player group presets za brzi odabir ekipe.
 - Dijeljenje player grupa s pratiteljima.
 - Following lista korisnika.
-- Google login preko Firebase Auth kada je Firebase konfiguriran.
+- Google login preko Firebase Auth na Android/iOS platformama.
 - Rucni izbor teme: `System`, `Light`, `Dark`.
 - Responsive mobile i desktop layout.
 - Automatski light/dark mode prema postavkama sustava.
 - Platformske ikone za Android, iOS, macOS, web i Windows.
+- Pocetni izbor igara: Darts, Table Tennis, Tennis i Football.
 
 ## Pokretanje
 
@@ -50,7 +51,7 @@ flutter test
 
 - `lib/main.dart` - glavna aplikacija, navigacija i responsive shell.
 - `lib/models` - modeli i state controller za igru, korisnika, player grupe i povijest.
-- `lib/screens` - glavni ekrani aplikacije.
+- `lib/screens` - glavni ekrani aplikacije, ukljucujuci game hub i pikado tok.
 - `lib/services` - integracije za auth i cloud spremanje.
 - `lib/widgets` - ponovni UI elementi poput dartboarda i dialoga.
 - `test/widget_test.dart` - widget testovi za unos pogotka, undo, mobile layout i dark mode.
@@ -59,18 +60,22 @@ flutter test
 - `macos/Runner/Assets.xcassets/AppIcon.appiconset` - macOS app ikone.
 - `web/icons` i `web/favicon.png` - web i PWA ikone.
 - `windows/runner/resources/app_icon.ico` - Windows app ikona.
+- `android/app/google-services.json` - Android Firebase config za `com.luksa.targetpoint`.
+- `ios/Runner/GoogleService-Info.plist` - iOS Firebase config za `com.luksa.targetpoint`.
 
 ## Trenutna ogranicenja
 
-- Firebase projekt jos mora biti konfiguriran kroz platform-specific config datoteke.
+- Firebase config je dodan za Android i iOS; web, Windows, macOS i Linux jos nemaju Firebase config.
 - Guest podaci se jos ne spremaju nakon zatvaranja aplikacije.
 - Player grupe i following imaju lokalni session fallback dok cloud nije spojen.
 - Email/password login jos nije implementiran.
+- Table Tennis, Tennis i Football su trenutno pripremljeni ekrani bez scoring logike.
 
 ## Sljedeci koraci
 
-- Spojiti Firebase config datoteke za Android, iOS, web i ostale platforme.
+- Spojiti Firebase config za web i desktop platforme ako budu potrebne.
 - Dodati lokalno trajno spremanje za guest mode.
 - Dodati ucitavanje player grupa i following liste iz Realtime Databasea.
 - Dodati email/password login.
 - Dodati detaljniju statistiku i cloud sync povijesti meceva.
+- Dodati scoring pravila za Table Tennis, Tennis i Football.
