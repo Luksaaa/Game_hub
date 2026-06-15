@@ -20,6 +20,8 @@ Target Point je Flutter aplikacija za pracenje pikado meceva. Glavni ekran koris
 - Following lista korisnika.
 - Google login preko Firebase Auth na Android/iOS platformama.
 - Rucni izbor teme: `System`, `Light`, `Dark`.
+- Lokalizacija prema jeziku sustava i rucni izbor jezika.
+- Podrzani jezici: English, Hrvatski, Deutsch, Espanol, Francais, Italiano, Japanese i Chinese/Mandarin.
 - Responsive mobile i desktop layout.
 - Automatski light/dark mode prema postavkama sustava.
 - Platformske ikone za Android, iOS, macOS, web i Windows.
@@ -52,6 +54,7 @@ flutter test
 
 - `lib/main.dart` - glavna aplikacija, navigacija i responsive shell.
 - `lib/models` - modeli i state controller za igru, korisnika, player grupe i povijest.
+- `lib/l10n` - lokalizacijski sloj i prijevodi aplikacije.
 - `lib/screens` - glavni ekrani aplikacije, ukljucujuci game hub i pikado tok.
 - `lib/services` - integracije za auth i cloud spremanje.
 - `lib/widgets` - ponovni UI elementi poput dartboarda i dialoga.
@@ -72,6 +75,7 @@ flutter test
 - Email/password login jos nije implementiran.
 - Sve aktivnosti osim Darts su trenutno pripremljeni ekrani bez scoring logike.
 - Custom aktivnosti se trenutno pamte samo u otvorenoj sesiji aplikacije.
+- Dio vrlo specificnih opisa planiranih igara jos koristi fallback tekst dok se ne uvede detaljna scoring logika za svaku igru.
 
 ## Sljedeci koraci
 
@@ -82,3 +86,4 @@ flutter test
 - Dodati detaljniju statistiku i cloud sync povijesti meceva.
 - Dodati scoring pravila za igre iz game huba.
 - Spremiti custom aktivnosti i sudionike u Firebase.
+- Prosiriti prijevode za sve buduce scoring ekrane kada se pojedine igre implementiraju.

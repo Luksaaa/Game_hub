@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:target_point/main.dart';
+import 'package:target_point/l10n/app_localizations.dart';
 import 'package:target_point/models/game_state_controller.dart';
 import 'package:target_point/models/sport_game.dart';
 import 'package:target_point/widgets/dartboard.dart';
@@ -141,6 +142,23 @@ void main() {
     expect(gameNames.contains('Catan'), isTrue);
     expect(gameNames.contains('Monopoly'), isTrue);
     expect(gameNames.contains('Beer Pong'), isTrue);
+  });
+
+  test('provides supported app translations', () {
+    expect(
+      AppLocalizations.supportedLocales.map((locale) => locale.languageCode),
+      ['en', 'hr', 'de', 'es', 'fr', 'it', 'ja', 'zh'],
+    );
+
+    expect(
+      const AppLocalizations(Locale('hr')).t('hub.chooseGame'),
+      'Odaberi igru',
+    );
+    expect(
+      const AppLocalizations(Locale('de')).t('common.language'),
+      'Sprache',
+    );
+    expect(const AppLocalizations(Locale('ja')).t('game.darts.name'), 'ダーツ');
   });
 
   test('can create and select a player group preset', () {

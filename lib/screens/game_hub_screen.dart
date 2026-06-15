@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/sport_game.dart';
 import '../theme/app_palette.dart';
 import 'coming_soon_game_screen.dart';
@@ -7,14 +8,17 @@ import 'coming_soon_game_screen.dart';
 class GameHubScreen extends StatelessWidget {
   const GameHubScreen({
     required this.themeMode,
+    required this.locale,
     required this.customActivities,
     required this.onCreateActivity,
     required this.onThemeModeChanged,
+    required this.onLocaleChanged,
     required this.onOpenDarts,
     super.key,
   });
 
   final ThemeMode themeMode;
+  final Locale? locale;
   final List<SportGame> customActivities;
   final void Function({
     required String name,
@@ -23,12 +27,14 @@ class GameHubScreen extends StatelessWidget {
   })
   onCreateActivity;
   final ValueChanged<ThemeMode> onThemeModeChanged;
+  final ValueChanged<Locale?> onLocaleChanged;
   final ValueChanged<BuildContext> onOpenDarts;
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final games = [...customActivities, ...sportGames];
 
     return Scaffold(
@@ -51,7 +57,9 @@ class GameHubScreen extends StatelessWidget {
                   sliver: SliverToBoxAdapter(
                     child: _HubHeader(
                       themeMode: themeMode,
+                      locale: locale,
                       onThemeModeChanged: onThemeModeChanged,
+                      onLocaleChanged: onLocaleChanged,
                       onCreateActivity: () =>
                           _showCreateActivityDialog(context, onCreateActivity),
                     ),
@@ -100,7 +108,7 @@ class GameHubScreen extends StatelessWidget {
                   ),
                   sliver: SliverToBoxAdapter(
                     child: Text(
-                      'Darts is ready now. Presets and custom activities are prepared as modules so each one can get its own scoring rules later.',
+                      l10n.t('hub.note'),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: palette.textMuted,
                         fontWeight: FontWeight.w700,
@@ -129,12 +137,13 @@ class GameHubScreen extends StatelessWidget {
     final descriptionController = TextEditingController();
     final participantsController = TextEditingController();
     final palette = AppPalette.of(context);
+    final l10n = AppLocalizations.of(context);
 
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: palette.surface,
-        title: const Text('Create activity'),
+        title: Text(l10n.t('hub.createActivity')),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -142,26 +151,26 @@ class GameHubScreen extends StatelessWidget {
               TextField(
                 controller: nameController,
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Activity name',
-                  hintText: 'Beer race',
+                decoration: InputDecoration(
+                  labelText: l10n.t('activity.name'),
+                  hintText: l10n.t('activity.nameHint'),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: descriptionController,
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Rules or description',
-                  hintText: 'First person to finish wins',
+                decoration: InputDecoration(
+                  labelText: l10n.t('activity.rules'),
+                  hintText: l10n.t('activity.rulesHint'),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: participantsController,
-                decoration: const InputDecoration(
-                  labelText: 'Participants',
-                  hintText: 'Marko, Luka, Borna',
+                decoration: InputDecoration(
+                  labelText: l10n.t('activity.participants'),
+                  hintText: l10n.t('activity.participantsHint'),
                 ),
               ),
             ],
@@ -170,7 +179,10 @@ class GameHubScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text('Cancel', style: TextStyle(color: palette.textMuted)),
+            child: Text(
+              l10n.t('common.cancel'),
+              style: TextStyle(color: palette.textMuted),
+            ),
           ),
           FilledButton.icon(
             style: FilledButton.styleFrom(backgroundColor: palette.primary),
@@ -187,7 +199,7 @@ class GameHubScreen extends StatelessWidget {
               Navigator.of(dialogContext).pop();
             },
             icon: const Icon(Icons.add),
-            label: const Text('Create'),
+            label: Text(l10n.t('common.create')),
           ),
         ],
       ),
@@ -201,18 +213,23 @@ class GameHubScreen extends StatelessWidget {
 class _HubHeader extends StatelessWidget {
   const _HubHeader({
     required this.themeMode,
+    required this.locale,
     required this.onThemeModeChanged,
+    required this.onLocaleChanged,
     required this.onCreateActivity,
   });
 
   final ThemeMode themeMode;
+  final Locale? locale;
   final ValueChanged<ThemeMode> onThemeModeChanged;
+  final ValueChanged<Locale?> onLocaleChanged;
   final VoidCallback onCreateActivity;
 
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return Row(
       children: [
@@ -231,7 +248,7 @@ class _HubHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Target Point',
+                l10n.t('app.title'),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.headlineSmall?.copyWith(
@@ -240,7 +257,7 @@ class _HubHeader extends StatelessWidget {
                 ),
               ),
               Text(
-                'Choose a game',
+                l10n.t('hub.chooseGame'),
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: palette.primary,
                   fontWeight: FontWeight.w800,
@@ -250,20 +267,43 @@ class _HubHeader extends StatelessWidget {
           ),
         ),
         IconButton.filledTonal(
-          tooltip: 'Create activity',
+          tooltip: l10n.t('hub.createActivity'),
           onPressed: onCreateActivity,
           icon: const Icon(Icons.add),
         ),
         const SizedBox(width: 6),
+        PopupMenuButton<Locale?>(
+          tooltip: l10n.t('common.language'),
+          icon: Icon(Icons.language, color: palette.text),
+          initialValue: locale,
+          onSelected: onLocaleChanged,
+          itemBuilder: (context) => [
+            PopupMenuItem(value: null, child: Text(l10n.t('common.system'))),
+            for (final supportedLocale in AppLocalizations.supportedLocales)
+              PopupMenuItem(
+                value: supportedLocale,
+                child: Text(AppLocalizations.languageName(supportedLocale)),
+              ),
+          ],
+        ),
         PopupMenuButton<ThemeMode>(
-          tooltip: 'Theme',
+          tooltip: l10n.t('common.theme'),
           icon: Icon(Icons.brightness_6, color: palette.text),
           initialValue: themeMode,
           onSelected: onThemeModeChanged,
-          itemBuilder: (context) => const [
-            PopupMenuItem(value: ThemeMode.system, child: Text('System')),
-            PopupMenuItem(value: ThemeMode.light, child: Text('Light')),
-            PopupMenuItem(value: ThemeMode.dark, child: Text('Dark')),
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: ThemeMode.system,
+              child: Text(l10n.t('common.system')),
+            ),
+            PopupMenuItem(
+              value: ThemeMode.light,
+              child: Text(l10n.t('common.light')),
+            ),
+            PopupMenuItem(
+              value: ThemeMode.dark,
+              child: Text(l10n.t('common.dark')),
+            ),
           ],
         ),
       ],
@@ -281,6 +321,7 @@ class _GameCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final isReady = game.status == SportGameStatus.ready;
 
     return Material(
@@ -315,7 +356,7 @@ class _GameCard extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                game.name,
+                l10n.gameName(game.id, game.name),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.titleLarge?.copyWith(
@@ -328,7 +369,7 @@ class _GameCard extends StatelessWidget {
                 child: Align(
                   alignment: Alignment.topLeft,
                   child: Text(
-                    game.subtitle,
+                    l10n.gameSubtitle(game.id, game.subtitle),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodyMedium?.copyWith(
@@ -369,6 +410,7 @@ class _StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -378,10 +420,10 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         isCustom
-            ? 'Custom'
+            ? l10n.t('common.custom')
             : isReady
-            ? 'Ready'
-            : 'Soon',
+            ? l10n.t('common.ready')
+            : l10n.t('common.soon'),
         style: TextStyle(
           color: isReady ? palette.primary : palette.textMuted,
           fontSize: 12,

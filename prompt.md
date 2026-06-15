@@ -24,6 +24,7 @@ The app is currently split across:
 - `lib/screens`
 - `lib/services`
 - `lib/theme`
+- `lib/l10n`
 - `lib/widgets`
 - `test/widget_test.dart`
 
@@ -34,6 +35,9 @@ State is currently managed by `GameStateController`, a `ChangeNotifier`. Firebas
 - Clickable dartboard rendered with `CustomPainter`.
 - Game hub entry screen with Darts plus planned cards for sports, board games, card games, party games, and custom user-created competitions.
 - Users can create a custom activity with a name, description/rules, and participants. Custom activities are local session state for now.
+- Localization is centralized in `lib/l10n/app_localizations.dart`.
+- Supported locales: English, Croatian, German, Spanish, French, Italian, Japanese, and Chinese/Mandarin.
+- The app follows the system locale by default and allows manual language override from the game hub and account profile.
 - Hit detection from tap coordinates.
 - X01 and Count up game modes.
 - Starting score choices: `301`, `501`, `701`.
@@ -372,6 +376,7 @@ flutter test
 - Email/password authentication is not implemented yet.
 - Every activity except Darts currently has a planned-game screen only.
 - Custom activities are not persisted to Firebase yet.
+- Some planned-game detail text still falls back to English until each scoring module is implemented.
 
 ## Preferred Next Implementation Order
 
@@ -383,5 +388,6 @@ flutter test
 6. Expand sharing permissions.
 7. Implement scoring engines for the planned games in the game hub.
 8. Persist custom activities and participants to Firebase.
+9. Extend localized strings when implementing each planned scoring module.
 
 Keep each change narrow and preserve working tests.

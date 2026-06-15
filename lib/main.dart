@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'l10n/app_localizations.dart';
 import 'models/game_state_controller.dart';
 import 'models/sport_game.dart';
 import 'theme/app_palette.dart';
@@ -24,6 +26,7 @@ class TargetPointApp extends StatefulWidget {
 
 class _TargetPointAppState extends State<TargetPointApp> {
   ThemeMode _themeMode = ThemeMode.system;
+  Locale? _locale;
   final List<SportGame> _customActivities = [];
 
   @override
@@ -32,20 +35,34 @@ class _TargetPointAppState extends State<TargetPointApp> {
       title: 'Target Point',
       debugShowCheckedModeBanner: false,
       themeMode: _themeMode,
+      locale: _locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       theme: _buildTheme(Brightness.light),
       darkTheme: _buildTheme(Brightness.dark),
       home: GameHubScreen(
         themeMode: _themeMode,
+        locale: _locale,
         customActivities: _customActivities,
         onCreateActivity: _createCustomActivity,
         onThemeModeChanged: (mode) => setState(() => _themeMode = mode),
+        onLocaleChanged: (locale) => setState(() => _locale = locale),
         onOpenDarts: (navigatorContext) {
           Navigator.of(navigatorContext).push(
             MaterialPageRoute(
               builder: (_) => DartMatchScreen(
                 themeMode: _themeMode,
+                locale: _locale,
                 onThemeModeChanged: (mode) {
                   setState(() => _themeMode = mode);
+                },
+                onLocaleChanged: (locale) {
+                  setState(() => _locale = locale);
                 },
               ),
             ),
@@ -119,12 +136,16 @@ class _TargetPointAppState extends State<TargetPointApp> {
 class DartMatchScreen extends StatefulWidget {
   const DartMatchScreen({
     required this.themeMode,
+    required this.locale,
     required this.onThemeModeChanged,
+    required this.onLocaleChanged,
     super.key,
   });
 
   final ThemeMode themeMode;
+  final Locale? locale;
   final ValueChanged<ThemeMode> onThemeModeChanged;
+  final ValueChanged<Locale?> onLocaleChanged;
 
   @override
   State<DartMatchScreen> createState() => _DartMatchScreenState();
@@ -188,7 +209,9 @@ class _DartMatchScreenState extends State<DartMatchScreen> {
         builder: (_) => AccountScreen(
           controller: _controller,
           themeMode: widget.themeMode,
+          locale: widget.locale,
           onThemeModeChanged: widget.onThemeModeChanged,
+          onLocaleChanged: widget.onLocaleChanged,
         ),
       ),
     );

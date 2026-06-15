@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/game_state_controller.dart';
 import '../theme/app_palette.dart';
 
@@ -7,13 +8,17 @@ class AccountScreen extends StatefulWidget {
   const AccountScreen({
     required this.controller,
     required this.themeMode,
+    required this.locale,
     required this.onThemeModeChanged,
+    required this.onLocaleChanged,
     super.key,
   });
 
   final GameStateController controller;
   final ThemeMode themeMode;
+  final Locale? locale;
   final ValueChanged<ThemeMode> onThemeModeChanged;
+  final ValueChanged<Locale?> onLocaleChanged;
 
   @override
   State<AccountScreen> createState() => _AccountScreenState();
@@ -61,6 +66,7 @@ class _AccountScreenState extends State<AccountScreen> {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
 
     return ListenableBuilder(
       listenable: widget.controller,
@@ -81,7 +87,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 onPressed: () => Navigator.of(context).pop(),
               ),
               title: Text(
-                'Account',
+                l10n.t('account.title'),
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: palette.text,
                   fontWeight: FontWeight.w900,
@@ -92,11 +98,11 @@ class _AccountScreenState extends State<AccountScreen> {
                 labelColor: palette.primary,
                 unselectedLabelColor: palette.textMuted,
                 indicatorColor: palette.primary,
-                tabs: const [
-                  Tab(text: 'Profile'),
-                  Tab(text: 'Login'),
-                  Tab(text: 'Groups'),
-                  Tab(text: 'Social'),
+                tabs: [
+                  Tab(text: l10n.t('account.profile')),
+                  Tab(text: l10n.t('account.login')),
+                  Tab(text: l10n.t('account.groups')),
+                  Tab(text: l10n.t('account.social')),
                 ],
               ),
             ),
@@ -109,7 +115,9 @@ class _AccountScreenState extends State<AccountScreen> {
                   colorOptions: _colorOptions,
                   palette: palette,
                   themeMode: widget.themeMode,
+                  locale: widget.locale,
                   onThemeModeChanged: widget.onThemeModeChanged,
+                  onLocaleChanged: widget.onLocaleChanged,
                   onColorSelected: (color) =>
                       setState(() => _selectedColor = color),
                   onSave: _saveProfile,
@@ -139,7 +147,9 @@ class _ProfileTab extends StatelessWidget {
     required this.colorOptions,
     required this.palette,
     required this.themeMode,
+    required this.locale,
     required this.onThemeModeChanged,
+    required this.onLocaleChanged,
     required this.onColorSelected,
     required this.onSave,
   });
@@ -150,12 +160,16 @@ class _ProfileTab extends StatelessWidget {
   final List<int> colorOptions;
   final AppPalette palette;
   final ThemeMode themeMode;
+  final Locale? locale;
   final ValueChanged<ThemeMode> onThemeModeChanged;
+  final ValueChanged<Locale?> onLocaleChanged;
   final ValueChanged<int> onColorSelected;
   final VoidCallback onSave;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -225,17 +239,56 @@ class _ProfileTab extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _PanelTitle(title: 'Theme', palette: palette),
+              _PanelTitle(title: l10n.t('common.theme'), palette: palette),
               const SizedBox(height: 10),
               SegmentedButton<ThemeMode>(
-                segments: const [
-                  ButtonSegment(value: ThemeMode.system, label: Text('System')),
-                  ButtonSegment(value: ThemeMode.light, label: Text('Light')),
-                  ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
+                segments: [
+                  ButtonSegment(
+                    value: ThemeMode.system,
+                    label: Text(l10n.t('common.system')),
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.light,
+                    label: Text(l10n.t('common.light')),
+                  ),
+                  ButtonSegment(
+                    value: ThemeMode.dark,
+                    label: Text(l10n.t('common.dark')),
+                  ),
                 ],
                 selected: {themeMode},
                 onSelectionChanged: (selection) =>
                     onThemeModeChanged(selection.first),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _Panel(
+          palette: palette,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _PanelTitle(title: l10n.t('common.language'), palette: palette),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<Locale?>(
+                initialValue: locale,
+                decoration: const InputDecoration(border: OutlineInputBorder()),
+                items: [
+                  DropdownMenuItem<Locale?>(
+                    value: null,
+                    child: Text(l10n.t('common.system')),
+                  ),
+                  for (final supportedLocale
+                      in AppLocalizations.supportedLocales)
+                    DropdownMenuItem<Locale?>(
+                      value: supportedLocale,
+                      child: Text(
+                        AppLocalizations.languageName(supportedLocale),
+                      ),
+                    ),
+                ],
+                onChanged: onLocaleChanged,
               ),
             ],
           ),

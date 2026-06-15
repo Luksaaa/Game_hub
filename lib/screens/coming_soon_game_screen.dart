@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/sport_game.dart';
 import '../theme/app_palette.dart';
 
@@ -12,6 +13,9 @@ class ComingSoonGameScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final name = l10n.gameName(game.id, game.name);
+    final subtitle = l10n.gameSubtitle(game.id, game.subtitle);
 
     return Scaffold(
       backgroundColor: palette.background,
@@ -19,7 +23,7 @@ class ComingSoonGameScreen extends StatelessWidget {
         backgroundColor: palette.surface,
         foregroundColor: palette.text,
         scrolledUnderElevation: 0,
-        title: Text(game.name),
+        title: Text(name),
       ),
       body: SafeArea(
         child: Padding(
@@ -38,7 +42,7 @@ class ComingSoonGameScreen extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               Text(
-                '${game.name} scoring',
+                '$name scoring',
                 style: theme.textTheme.headlineSmall?.copyWith(
                   color: palette.text,
                   fontWeight: FontWeight.w900,
@@ -46,7 +50,7 @@ class ComingSoonGameScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                game.subtitle,
+                subtitle,
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: palette.textMuted,
                   fontWeight: FontWeight.w700,
@@ -54,7 +58,7 @@ class ComingSoonGameScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Planned modes',
+                l10n.t('activity.plannedModes'),
                 style: theme.textTheme.titleMedium?.copyWith(
                   color: palette.text,
                   fontWeight: FontWeight.w900,
@@ -80,7 +84,7 @@ class ComingSoonGameScreen extends StatelessWidget {
               if (game.participants.isNotEmpty) ...[
                 const SizedBox(height: 24),
                 Text(
-                  'Participants',
+                  l10n.t('activity.participants'),
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: palette.text,
                     fontWeight: FontWeight.w900,
@@ -120,7 +124,7 @@ class ComingSoonGameScreen extends StatelessWidget {
                   ),
                   onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(Icons.arrow_back),
-                  label: const Text('Back to games'),
+                  label: Text(l10n.t('activity.backToGames')),
                 ),
               ),
             ],
