@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/game_state_controller.dart';
 import '../models/game_settings.dart';
@@ -17,6 +18,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _playerNameController = TextEditingController();
   final TextEditingController _groupNameController = TextEditingController();
+  final TextEditingController _liveCodeController = TextEditingController();
   int _newPlayerColor = 0xFF0F8B6B; // Default emerald
 
   final List<int> _colorOptions = const [
@@ -32,6 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void dispose() {
     _playerNameController.dispose();
     _groupNameController.dispose();
+    _liveCodeController.dispose();
     super.dispose();
   }
 
@@ -372,6 +375,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
+          _LiveMatchCard(
+            controller: widget.controller,
+            liveCodeController: _liveCodeController,
+          ),
+          const SizedBox(height: 16),
+
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -687,6 +696,203 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+}
+
+class _LiveMatchCard extends StatelessWidget {
+  const _LiveMatchCard({
+    required this.controller,
+    required this.liveCodeController,
+  });
+
+  final GameStateController controller;
+  final TextEditingController liveCodeController;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final theme = Theme.of(context);
+    final isActive = controller.isLiveMatchActive;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isActive ? palette.primary : palette.border,
+          width: isActive ? 1.5 : 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isActive ? Icons.cloud_done : Icons.cloud_sync_outlined,
+                color: palette.primary,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Live Match Sync',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: palette.text,
+                      ),
+                    ),
+                    Text(
+                      isActive
+                          ? 'Scores update across joined devices.'
+                          : 'Create or join a darts match on Firebase.',
+                      style: TextStyle(
+                        color: palette.textMuted,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isActive)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: palette.primarySoft,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    controller.liveMatchId ?? '',
+                    style: TextStyle(
+                      color: palette.primary,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (isActive)
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      final code = controller.liveMatchId;
+                      if (code != null) {
+                        Clipboard.setData(ClipboardData(text: code));
+                      }
+                    },
+                    icon: const Icon(Icons.copy, size: 18),
+                    label: const Text('Copy code'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: palette.primary,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: controller.leaveLiveMatch,
+                    icon: const Icon(Icons.logout, size: 18),
+                    label: const Text('Leave'),
+                  ),
+                ),
+              ],
+            )
+          else
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final stackControls = constraints.maxWidth < 560;
+                final codeField = TextField(
+                  controller: liveCodeController,
+                  textCapitalization: TextCapitalization.characters,
+                  decoration: InputDecoration(
+                    labelText: 'Join code',
+                    isDense: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  style: TextStyle(
+                    color: palette.text,
+                    fontWeight: FontWeight.w900,
+                  ),
+                );
+                final joinButton = FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: palette.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () =>
+                      controller.joinLiveMatch(liveCodeController.text),
+                  icon: const Icon(Icons.login, size: 18),
+                  label: const Text('Join'),
+                );
+
+                return stackControls
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: palette.primary,
+                              foregroundColor: Colors.white,
+                            ),
+                            onPressed: controller.createLiveMatch,
+                            icon: const Icon(Icons.add_link, size: 18),
+                            label: const Text('Create live match'),
+                          ),
+                          const SizedBox(height: 10),
+                          codeField,
+                          const SizedBox(height: 10),
+                          joinButton,
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(
+                            child: FilledButton.icon(
+                              style: FilledButton.styleFrom(
+                                backgroundColor: palette.primary,
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: controller.createLiveMatch,
+                              icon: const Icon(Icons.add_link, size: 18),
+                              label: const Text('Create live match'),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(flex: 2, child: codeField),
+                          const SizedBox(width: 10),
+                          Expanded(child: joinButton),
+                        ],
+                      );
+              },
+            ),
+          if (controller.liveMatchMessage != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              controller.liveMatchMessage!,
+              style: TextStyle(
+                color: palette.textMuted,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+          ],
         ],
       ),
     );

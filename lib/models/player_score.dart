@@ -19,8 +19,8 @@ class PlayerScore {
   final bool isWinner;
 
   double get average {
-    if (turns.isEmpty) return 0.0;
-    return totalScored / turns.length;
+    if (totalThrows == 0) return 0.0;
+    return (totalScored / totalThrows) * 3;
   }
 
   int get highestTurnScore {
@@ -63,6 +63,43 @@ class PlayerScore {
       .expand((t) => t)
       .where((hit) => hit.band == SegmentBand.triple)
       .length;
+
+  Map<int, int> get numberHitCounts {
+    final counts = <int, int>{};
+    for (final hit in turns.expand((turn) => turn)) {
+      final number = hit.number;
+      if (number == null || hit.isMiss) {
+        continue;
+      }
+      counts[number] = (counts[number] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  int? get bestNumber {
+    final counts = numberHitCounts;
+    if (counts.isEmpty) {
+      return null;
+    }
+
+    return counts.entries.reduce((best, next) {
+      if (next.value > best.value) {
+        return next;
+      }
+      if (next.value == best.value && next.key > best.key) {
+        return next;
+      }
+      return best;
+    }).key;
+  }
+
+  int get bestNumberHits {
+    final number = bestNumber;
+    if (number == null) {
+      return 0;
+    }
+    return numberHitCounts[number] ?? 0;
+  }
 
   PlayerScore copyWith({
     String? name,

@@ -3,7 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:target_point/main.dart';
 import 'package:target_point/l10n/app_localizations.dart';
+import 'package:target_point/models/dart_hit.dart';
 import 'package:target_point/models/game_state_controller.dart';
+import 'package:target_point/models/player_score.dart';
 import 'package:target_point/models/sport_game.dart';
 import 'package:target_point/widgets/dartboard.dart';
 
@@ -179,5 +181,48 @@ void main() {
     expect(controller.selectedPlayerGroup?.name, 'Duo Night');
     expect(controller.players.map((player) => player.name), ['Luka', 'Borna']);
     expect(controller.playerGroups.length, 2);
+  });
+
+  test('tracks the most frequently hit dartboard number', () {
+    const player = PlayerScore(
+      name: 'Marko',
+      avatarColorValue: 0xFF0F8B6B,
+      remaining: 301,
+      totalScored: 140,
+      isWinner: false,
+      turns: [
+        [
+          DartHit(
+            label: 'T20',
+            score: 60,
+            band: SegmentBand.triple,
+            number: 20,
+          ),
+          DartHit(
+            label: 'S20',
+            score: 20,
+            band: SegmentBand.single,
+            number: 20,
+          ),
+          DartHit(
+            label: 'T19',
+            score: 57,
+            band: SegmentBand.triple,
+            number: 19,
+          ),
+        ],
+        [
+          DartHit(
+            label: 'S20',
+            score: 20,
+            band: SegmentBand.single,
+            number: 20,
+          ),
+        ],
+      ],
+    );
+
+    expect(player.bestNumber, 20);
+    expect(player.bestNumberHits, 3);
   });
 }

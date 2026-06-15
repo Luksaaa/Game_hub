@@ -143,6 +143,47 @@ class AuthRepository {
     });
   }
 
+  Future<void> saveDartMatch(
+    String matchId,
+    Map<String, Object?> payload,
+  ) async {
+    if (!_firebaseReady) {
+      return;
+    }
+
+    await _db.child('dartMatches/$matchId').update({
+      ...payload,
+      'updatedAt': ServerValue.timestamp,
+    });
+  }
+
+  Future<Map<String, dynamic>?> fetchDartMatch(String matchId) async {
+    if (!_firebaseReady) {
+      return null;
+    }
+
+    final snapshot = await _db.child('dartMatches/$matchId').get();
+    final value = snapshot.value;
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+    return null;
+  }
+
+  Stream<Map<String, dynamic>?> watchDartMatch(String matchId) {
+    if (!_firebaseReady) {
+      return const Stream.empty();
+    }
+
+    return _db.child('dartMatches/$matchId').onValue.map((event) {
+      final value = event.snapshot.value;
+      if (value is Map) {
+        return Map<String, dynamic>.from(value);
+      }
+      return null;
+    });
+  }
+
   Future<void> _saveUserProfile(UserSession session) async {
     if (!_firebaseReady || session.isGuest) {
       return;

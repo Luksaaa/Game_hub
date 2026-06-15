@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import 'dart_hit.dart';
@@ -50,6 +53,8 @@ class GameStateController extends ChangeNotifier {
   }
 
   final AuthRepository _authRepository = AuthRepository();
+  StreamSubscription<Map<String, dynamic>?>? _liveMatchSubscription;
+  bool _isApplyingRemoteState = false;
 
   Future<void> _initializeServices() async {
     await _authRepository.initialize();
@@ -81,6 +86,19 @@ class GameStateController extends ChangeNotifier {
 
   String? _accountMessage;
   String? get accountMessage => _accountMessage;
+
+  String? _liveMatchId;
+  String? get liveMatchId => _liveMatchId;
+
+  bool _isLiveHost = false;
+  bool get isLiveHost => _isLiveHost;
+
+  String? _liveHostUserId;
+
+  String? _liveMatchMessage;
+  String? get liveMatchMessage => _liveMatchMessage;
+
+  bool get isLiveMatchActive => _liveMatchId != null;
 
   void changeTab(int index) {
     _activeTabIndex = index;
@@ -184,6 +202,7 @@ class GameStateController extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    await leaveLiveMatch();
     await _authRepository.signOut();
     _currentUser = const UserSession(
       id: 'guest',
@@ -236,6 +255,7 @@ class GameStateController extends ChangeNotifier {
     _authRepository.savePlayerGroup(group).catchError((Object error) {
       _accountMessage = 'Could not sync group to Firebase: $error';
     });
+    _syncLiveMatch();
     notifyListeners();
   }
 
@@ -247,6 +267,7 @@ class GameStateController extends ChangeNotifier {
 
     _selectedPlayerGroupId = group.id;
     _applyPlayerGroup(group);
+    _syncLiveMatch();
     notifyListeners();
   }
 
@@ -265,6 +286,168 @@ class GameStateController extends ChangeNotifier {
         ? 'Sign in to sync shared groups to Firebase.'
         : 'Group shared with followers.';
     notifyListeners();
+  }
+
+  Future<void> createLiveMatch() async {
+    if (!_cloudFeaturesAvailable) {
+      _liveMatchMessage = 'Firebase is not ready for live matches.';
+      notifyListeners();
+      return;
+    }
+    if (_currentUser.isGuest) {
+      _liveMatchMessage = 'Sign in with Google to create a live match.';
+      notifyListeners();
+      return;
+    }
+
+    final code = _generateLiveMatchCode();
+    _liveMatchId = code;
+    _isLiveHost = true;
+    _liveHostUserId = _currentUser.id;
+    _liveMatchMessage = 'Live match created. Share code $code.';
+    _subscribeToLiveMatch(code);
+    await _syncLiveMatch();
+    notifyListeners();
+  }
+
+  Future<void> joinLiveMatch(String matchCode) async {
+    final code = matchCode.trim().toUpperCase();
+    if (code.isEmpty) {
+      _liveMatchMessage = 'Enter a live match code.';
+      notifyListeners();
+      return;
+    }
+    if (!_cloudFeaturesAvailable) {
+      _liveMatchMessage = 'Firebase is not ready for live matches.';
+      notifyListeners();
+      return;
+    }
+    if (_currentUser.isGuest) {
+      _liveMatchMessage = 'Sign in with Google to join a live match.';
+      notifyListeners();
+      return;
+    }
+
+    final payload = await _authRepository.fetchDartMatch(code);
+    if (payload == null) {
+      _liveMatchMessage = 'No live match found for $code.';
+      notifyListeners();
+      return;
+    }
+
+    _liveMatchId = code;
+    _liveHostUserId = payload['hostUserId'] as String?;
+    _isLiveHost = _liveHostUserId == _currentUser.id;
+    _liveMatchMessage = 'Joined live match $code.';
+    _applyLivePayload(payload);
+    _subscribeToLiveMatch(code);
+    notifyListeners();
+  }
+
+  Future<void> leaveLiveMatch() async {
+    await _liveMatchSubscription?.cancel();
+    _liveMatchSubscription = null;
+    _liveMatchId = null;
+    _isLiveHost = false;
+    _liveHostUserId = null;
+    _liveMatchMessage = 'Live match left.';
+    notifyListeners();
+  }
+
+  void _subscribeToLiveMatch(String matchId) {
+    _liveMatchSubscription?.cancel();
+    _liveMatchSubscription = _authRepository.watchDartMatch(matchId).listen((
+      payload,
+    ) {
+      if (payload == null) {
+        return;
+      }
+      _applyLivePayload(payload);
+    });
+  }
+
+  Future<void> _syncLiveMatch() async {
+    final matchId = _liveMatchId;
+    if (matchId == null || _isApplyingRemoteState || _currentUser.isGuest) {
+      return;
+    }
+
+    try {
+      await _authRepository.saveDartMatch(matchId, _livePayload());
+    } catch (error) {
+      _liveMatchMessage = 'Could not sync live match: $error';
+      notifyListeners();
+    }
+  }
+
+  Map<String, Object?> _livePayload() {
+    return {
+      'id': _liveMatchId,
+      'hostUserId': _liveHostUserId ?? _currentUser.id,
+      'updatedByUserId': _currentUser.id,
+      'settings': _settingsToMap(_settings),
+      'players': _players.map(_playerToMap).toList(),
+      'currentTurn': _currentTurn.map(_hitToMap).toList(),
+      'currentPlayerIndex': _currentPlayerIndex,
+      'matchMessage': _matchMessage,
+    };
+  }
+
+  void _applyLivePayload(Map<String, dynamic> payload) {
+    _isApplyingRemoteState = true;
+    try {
+      final settingsValue = payload['settings'];
+      final playersValue = payload['players'];
+      final turnValue = payload['currentTurn'];
+      _liveHostUserId = payload['hostUserId'] as String? ?? _liveHostUserId;
+      _isLiveHost = _liveHostUserId == _currentUser.id;
+
+      if (settingsValue is Map) {
+        _settings = _settingsFromMap(Map<String, dynamic>.from(settingsValue));
+      }
+      _players = _asList(playersValue)
+          .whereType<Map>()
+          .map((value) => _playerFromMap(Map<String, dynamic>.from(value)))
+          .toList();
+      if (_players.isEmpty) {
+        _players = _profiles
+            .map(
+              (profile) => PlayerScore(
+                name: profile.name,
+                avatarColorValue: profile.avatarColorValue,
+                remaining: _settings.mode == GameMode.x01
+                    ? _settings.startingScore
+                    : 0,
+                totalScored: 0,
+                turns: const [],
+                isWinner: false,
+              ),
+            )
+            .toList();
+      }
+      _currentTurn
+        ..clear()
+        ..addAll(
+          _asList(turnValue).whereType<Map>().map(
+            (value) => _hitFromMap(Map<String, dynamic>.from(value)),
+          ),
+        );
+      _currentPlayerIndex = _intFromValue(payload['currentPlayerIndex']);
+      if (_currentPlayerIndex >= _players.length) {
+        _currentPlayerIndex = 0;
+      }
+      _matchMessage = payload['matchMessage'] as String?;
+      _liveMatchMessage = 'Live match synced.';
+    } finally {
+      _isApplyingRemoteState = false;
+    }
+    notifyListeners();
+  }
+
+  String _generateLiveMatchCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    final random = Random(DateTime.now().microsecondsSinceEpoch);
+    return List.generate(6, (_) => chars[random.nextInt(chars.length)]).join();
   }
 
   void followUser(String displayNameOrHandle) {
@@ -380,6 +563,7 @@ class GameStateController extends ChangeNotifier {
         ),
       );
     }
+    _syncLiveMatch();
     notifyListeners();
   }
 
@@ -392,6 +576,7 @@ class GameStateController extends ChangeNotifier {
     }
     _currentTurn.clear();
     _matchMessage = 'Removed ${removedPlayer.name} from current match.';
+    _syncLiveMatch();
     notifyListeners();
   }
 
@@ -412,6 +597,7 @@ class GameStateController extends ChangeNotifier {
         newIndex <= _currentPlayerIndex) {
       _currentPlayerIndex++;
     }
+    _syncLiveMatch();
     notifyListeners();
   }
 
@@ -431,6 +617,7 @@ class GameStateController extends ChangeNotifier {
         );
       }
     }
+    _syncLiveMatch();
     notifyListeners();
   }
 
@@ -442,6 +629,7 @@ class GameStateController extends ChangeNotifier {
 
     _currentTurn.add(hit);
     _matchMessage = null;
+    _syncLiveMatch();
     notifyListeners();
   }
 
@@ -452,6 +640,7 @@ class GameStateController extends ChangeNotifier {
 
     _currentTurn.removeLast();
     _matchMessage = null;
+    _syncLiveMatch();
     notifyListeners();
   }
 
@@ -487,6 +676,7 @@ class GameStateController extends ChangeNotifier {
       );
       _matchMessage = '${player.name} scored $turnScore.';
       _advanceTurn();
+      _syncLiveMatch();
       notifyListeners();
       return;
     }
@@ -509,6 +699,7 @@ class GameStateController extends ChangeNotifier {
       _updateProfileStatsForPlayer(player.name, _currentTurn, 0, false);
 
       _advanceTurn();
+      _syncLiveMatch();
       notifyListeners();
       return;
     }
@@ -538,6 +729,7 @@ class GameStateController extends ChangeNotifier {
     } else {
       _advanceTurn();
     }
+    _syncLiveMatch();
     notifyListeners();
   }
 
@@ -661,6 +853,129 @@ class GameStateController extends ChangeNotifier {
     _currentTurn.clear();
     _currentPlayerIndex = 0;
     _matchMessage = null;
+    _syncLiveMatch();
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _liveMatchSubscription?.cancel();
+    super.dispose();
+  }
+
+  Map<String, Object?> _settingsToMap(GameSettings settings) {
+    return {
+      'mode': settings.mode.name,
+      'startingScore': settings.startingScore,
+      'outRule': settings.outRule.name,
+    };
+  }
+
+  GameSettings _settingsFromMap(Map<String, dynamic> value) {
+    return GameSettings(
+      mode: GameMode.values.firstWhere(
+        (mode) => mode.name == value['mode'],
+        orElse: () => GameMode.x01,
+      ),
+      startingScore: _intFromValue(value['startingScore'], fallback: 501),
+      outRule: OutRule.values.firstWhere(
+        (rule) => rule.name == value['outRule'],
+        orElse: () => OutRule.doubleOut,
+      ),
+    );
+  }
+
+  Map<String, Object?> _playerToMap(PlayerScore player) {
+    return {
+      'name': player.name,
+      'avatarColorValue': player.avatarColorValue,
+      'remaining': player.remaining,
+      'totalScored': player.totalScored,
+      'isWinner': player.isWinner,
+      'turns': player.turns
+          .map((turn) => turn.map(_hitToMap).toList())
+          .toList(),
+    };
+  }
+
+  PlayerScore _playerFromMap(Map<String, dynamic> value) {
+    return PlayerScore(
+      name: value['name'] as String? ?? 'Player',
+      avatarColorValue: _intFromValue(
+        value['avatarColorValue'],
+        fallback: 0xFF0F8B6B,
+      ),
+      remaining: _intFromValue(value['remaining']),
+      totalScored: _intFromValue(value['totalScored']),
+      turns: _asList(value['turns'])
+          .map(
+            (turn) => _asList(turn)
+                .whereType<Map>()
+                .map((hit) => _hitFromMap(Map<String, dynamic>.from(hit)))
+                .toList(),
+          )
+          .toList(),
+      isWinner: value['isWinner'] == true,
+    );
+  }
+
+  Map<String, Object?> _hitToMap(DartHit hit) {
+    return {
+      'label': hit.label,
+      'score': hit.score,
+      'band': hit.band.name,
+      'number': hit.number,
+      'dx': hit.dx,
+      'dy': hit.dy,
+    };
+  }
+
+  DartHit _hitFromMap(Map<String, dynamic> value) {
+    return DartHit(
+      label: value['label'] as String? ?? 'MISS',
+      score: _intFromValue(value['score']),
+      band: SegmentBand.values.firstWhere(
+        (band) => band.name == value['band'],
+        orElse: () => SegmentBand.miss,
+      ),
+      number: value['number'] == null ? null : _intFromValue(value['number']),
+      dx: _doubleFromValue(value['dx']),
+      dy: _doubleFromValue(value['dy']),
+    );
+  }
+
+  List<dynamic> _asList(Object? value) {
+    if (value is List) {
+      return value;
+    }
+    if (value is Map) {
+      final entries = value.entries.toList()
+        ..sort((a, b) => a.key.toString().compareTo(b.key.toString()));
+      return entries.map((entry) => entry.value).toList();
+    }
+    return const [];
+  }
+
+  int _intFromValue(Object? value, {int fallback = 0}) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    if (value is String) {
+      return int.tryParse(value) ?? fallback;
+    }
+    return fallback;
+  }
+
+  double? _doubleFromValue(Object? value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    if (value is String) {
+      return double.tryParse(value);
+    }
+    return null;
   }
 }
