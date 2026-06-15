@@ -1,2 +1,67 @@
-# Target_point
+# Target Point
 
+Target Point je Flutter aplikacija za pracenje pikado meceva. Glavni ekran koristi veliki klikabilni dartboard: korisnik odabere polje koje je pogodio, a aplikacija automatski izracuna rezultat i vodi trenutni turn.
+
+## Trenutne funkcije
+
+- Klikabilni dartboard s poljima `single`, `double`, `triple`, `25`, `BULL` i `MISS`.
+- X01 nacin igre s pocetnim rezultatom `301`, `501` ili `701`.
+- Count up nacin igre.
+- Pravila zavrsetka: `Single`, `Double` i `Master`.
+- Preset igraci: `Marko`, `Luka`, `Borna`.
+- Tri bacanja po turnu.
+- Automatski prijelaz na sljedeceg igraca nakon treceg bacanja.
+- `Undo`, `Miss` i `Save turn` akcije.
+- Bust logika za X01.
+- Osnovni prosjek po igracu.
+- Responsive mobile i desktop layout.
+- Automatski light/dark mode prema postavkama sustava.
+- Platformske ikone za Android, iOS, macOS, web i Windows.
+
+## Pokretanje
+
+Preduvjet je instaliran Flutter SDK.
+
+```powershell
+flutter pub get
+flutter run
+```
+
+Za web preview:
+
+```powershell
+flutter run -d web-server --web-hostname 127.0.0.1 --web-port 5454
+```
+
+## Provjere
+
+```powershell
+flutter analyze
+flutter test
+```
+
+## Struktura projekta
+
+- `lib/main.dart` - glavna aplikacija, modeli igre, UI layout, dartboard painter i scoring logika.
+- `test/widget_test.dart` - widget testovi za unos pogotka, undo, mobile layout i dark mode.
+- `android/app/src/main/res/mipmap-*` - Android launcher ikone.
+- `ios/Runner/Assets.xcassets/AppIcon.appiconset` - iOS app ikone.
+- `macos/Runner/Assets.xcassets/AppIcon.appiconset` - macOS app ikone.
+- `web/icons` i `web/favicon.png` - web i PWA ikone.
+- `windows/runner/resources/app_icon.ico` - Windows app ikona.
+
+## Trenutna ogranicenja
+
+- Podaci se jos ne spremaju nakon zatvaranja aplikacije.
+- Nema login sustava.
+- Igraci su trenutno hardcoded preset.
+- Povijest meceva jos nije implementirana.
+- Search ikona u mobile headeru je trenutno samo vizualni placeholder.
+
+## Sljedeci koraci
+
+- Dodati lokalno spremanje meceva i igraca.
+- Omoguciti dodavanje i uredjivanje igraca.
+- Dodati match presets.
+- Dodati login i cloud sync.
+- Dodati detaljniju statistiku i povijest meceva.

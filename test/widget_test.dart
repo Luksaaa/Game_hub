@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:target_point/main.dart';
+import 'package:target_point/widgets/dartboard.dart';
+
 
 void main() {
   Future<void> pumpApp(
@@ -48,7 +50,7 @@ void main() {
 
     await tester.tapAt(tester.getCenter(find.byType(Dartboard)));
     await tester.pump();
-    await tester.tap(find.widgetWithText(FilledButton, 'Undo'));
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Undo'));
     await tester.pump();
 
     expect(find.text('BULL'), findsNothing);
