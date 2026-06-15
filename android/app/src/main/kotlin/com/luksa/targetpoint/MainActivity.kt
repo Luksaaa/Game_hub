@@ -1,4 +1,4 @@
-package com.targetpoint.target_point
+package com.luksa.targetpoint
 
 import io.flutter.embedding.android.FlutterActivity
 
