@@ -38,38 +38,6 @@ class UserSession {
   }
 }
 
-class PlayerGroupPreset {
-  const PlayerGroupPreset({
-    required this.id,
-    required this.name,
-    required this.playerNames,
-    required this.ownerUserId,
-    required this.isShared,
-  });
-
-  final String id;
-  final String name;
-  final List<String> playerNames;
-  final String ownerUserId;
-  final bool isShared;
-
-  PlayerGroupPreset copyWith({
-    String? id,
-    String? name,
-    List<String>? playerNames,
-    String? ownerUserId,
-    bool? isShared,
-  }) {
-    return PlayerGroupPreset(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      playerNames: playerNames ?? this.playerNames,
-      ownerUserId: ownerUserId ?? this.ownerUserId,
-      isShared: isShared ?? this.isShared,
-    );
-  }
-}
-
 class FollowedUser {
   const FollowedUser({
     required this.id,

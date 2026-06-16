@@ -38,152 +38,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
-  void _showCreateGroupDialog() {
-    final palette = AppPalette.of(context);
-    final theme = Theme.of(context);
-    _groupNameController.clear();
-    final selectedNames = widget.controller.players
-        .map((player) => player.name)
-        .toSet();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Dialog(
-              backgroundColor: palette.surface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: palette.border),
-              ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'Create Player Group',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: palette.text,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _groupNameController,
-                        decoration: InputDecoration(
-                          labelText: 'Group Name',
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                              color: palette.primary,
-                              width: 2,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: palette.border),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        style: TextStyle(
-                          color: palette.text,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Players',
-                        style: TextStyle(
-                          color: palette.textMuted,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Flexible(
-                        child: SingleChildScrollView(
-                          child: Column(
-                            children: widget.controller.profiles.map((profile) {
-                              final isSelected = selectedNames.contains(
-                                profile.name,
-                              );
-                              return CheckboxListTile(
-                                value: isSelected,
-                                activeColor: palette.primary,
-                                checkColor: Colors.white,
-                                contentPadding: EdgeInsets.zero,
-                                title: Text(
-                                  profile.name,
-                                  style: TextStyle(
-                                    color: palette.text,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                secondary: CircleAvatar(
-                                  backgroundColor: Color(
-                                    profile.avatarColorValue,
-                                  ),
-                                  foregroundColor: Colors.white,
-                                  child: Text(
-                                    profile.name.substring(0, 1).toUpperCase(),
-                                  ),
-                                ),
-                                onChanged: (checked) {
-                                  setModalState(() {
-                                    if (checked ?? false) {
-                                      selectedNames.add(profile.name);
-                                    } else {
-                                      selectedNames.remove(profile.name);
-                                    }
-                                  });
-                                },
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: Text(
-                              'Cancel',
-                              style: TextStyle(color: palette.textMuted),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          FilledButton(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: palette.primary,
-                            ),
-                            onPressed: () {
-                              widget.controller.createPlayerGroup(
-                                _groupNameController.text,
-                                selectedNames.toList(),
-                              );
-                              Navigator.of(context).pop();
-                            },
-                            child: const Text('Save Group'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   void _showAddPlayerDialog() {
     final palette = AppPalette.of(context);
     final theme = Theme.of(context);
@@ -375,118 +229,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
-          _LiveMatchCard(
-            controller: widget.controller,
-            liveCodeController: _liveCodeController,
-          ),
-          const SizedBox(height: 16),
-
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: palette.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: palette.border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Player Groups',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w900,
-                              color: palette.text,
-                            ),
-                          ),
-                          Text(
-                            'Pick a saved crew for this match.',
-                            style: TextStyle(
-                              color: palette.textMuted,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton.filled(
-                      style: IconButton.styleFrom(
-                        backgroundColor: palette.primary,
-                      ),
-                      tooltip: 'Create group',
-                      onPressed: _showCreateGroupDialog,
-                      icon: const Icon(Icons.group_add),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: widget.controller.playerGroups.map((group) {
-                    final isSelected =
-                        group.id == widget.controller.selectedPlayerGroupId;
-                    return ChoiceChip(
-                      label: Text(group.name),
-                      selected: isSelected,
-                      selectedColor: palette.primarySoft,
-                      labelStyle: TextStyle(
-                        color: isSelected ? palette.primary : palette.text,
-                        fontWeight: FontWeight.w900,
-                      ),
-                      avatar: Icon(
-                        group.isShared ? Icons.public : Icons.group,
-                        size: 18,
-                        color: isSelected ? palette.primary : palette.textMuted,
-                      ),
-                      onSelected: (_) {
-                        _confirmSettingsChange(() {
-                          widget.controller.selectPlayerGroup(group.id);
-                        });
-                      },
-                    );
-                  }).toList(),
-                ),
-                if (widget.controller.selectedPlayerGroup != null) ...[
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.controller.selectedPlayerGroup!.playerNames
-                              .join(', '),
-                          style: TextStyle(
-                            color: palette.textMuted,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: () => widget.controller.sharePlayerGroup(
-                          widget.controller.selectedPlayerGroup!.id,
-                        ),
-                        icon: const Icon(Icons.ios_share, size: 18),
-                        label: Text(
-                          widget.controller.selectedPlayerGroup!.isShared
-                              ? 'Shared'
-                              : 'Share',
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-
           // Game Mode & Rules Card
           Container(
             padding: const EdgeInsets.all(16),
@@ -498,7 +240,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _SectionTitle(title: 'Game Mode', palette: palette),
+                _SectionTitle(
+                  title: 'Game Mode',
+                  icon: Icons.videogame_asset,
+                  palette: palette,
+                ),
                 SegmentedButton<GameMode>(
                   segments: const [
                     ButtonSegment(value: GameMode.x01, label: Text('X01')),
@@ -517,7 +263,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 16),
 
                 if (settings.mode == GameMode.x01) ...[
-                  _SectionTitle(title: 'Starting Score', palette: palette),
+                  _SectionTitle(
+                    title: 'Starting Score',
+                    icon: Icons.score,
+                    palette: palette,
+                  ),
                   Wrap(
                     spacing: 8,
                     children: widget.controller.scoreOptions.map((score) {
@@ -542,7 +292,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  _SectionTitle(title: 'Finish Rule', palette: palette),
+                  _SectionTitle(
+                    title: 'Finish Rule',
+                    icon: Icons.flag,
+                    palette: palette,
+                  ),
                   SegmentedButton<OutRule>(
                     segments: const [
                       ButtonSegment(
@@ -702,220 +456,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-class _LiveMatchCard extends StatelessWidget {
-  const _LiveMatchCard({
-    required this.controller,
-    required this.liveCodeController,
-  });
-
-  final GameStateController controller;
-  final TextEditingController liveCodeController;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-    final theme = Theme.of(context);
-    final isActive = controller.isLiveMatchActive;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: palette.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isActive ? palette.primary : palette.border,
-          width: isActive ? 1.5 : 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(
-                isActive ? Icons.cloud_done : Icons.cloud_sync_outlined,
-                color: palette.primary,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Live Match Sync',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: palette.text,
-                      ),
-                    ),
-                    Text(
-                      isActive
-                          ? 'Scores update across joined devices.'
-                          : 'Create or join a darts match on Firebase.',
-                      style: TextStyle(
-                        color: palette.textMuted,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (isActive)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: palette.primarySoft,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    controller.liveMatchId ?? '',
-                    style: TextStyle(
-                      color: palette.primary,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          if (isActive)
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      final code = controller.liveMatchId;
-                      if (code != null) {
-                        Clipboard.setData(ClipboardData(text: code));
-                      }
-                    },
-                    icon: const Icon(Icons.copy, size: 18),
-                    label: const Text('Copy code'),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: FilledButton.icon(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: palette.primary,
-                      foregroundColor: Colors.white,
-                    ),
-                    onPressed: controller.leaveLiveMatch,
-                    icon: const Icon(Icons.logout, size: 18),
-                    label: const Text('Leave'),
-                  ),
-                ),
-              ],
-            )
-          else
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final stackControls = constraints.maxWidth < 560;
-                final codeField = TextField(
-                  controller: liveCodeController,
-                  textCapitalization: TextCapitalization.characters,
-                  decoration: InputDecoration(
-                    labelText: 'Join code',
-                    isDense: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  style: TextStyle(
-                    color: palette.text,
-                    fontWeight: FontWeight.w900,
-                  ),
-                );
-                final joinButton = FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: palette.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () =>
-                      controller.joinLiveMatch(liveCodeController.text),
-                  icon: const Icon(Icons.login, size: 18),
-                  label: const Text('Join'),
-                );
-
-                return stackControls
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          FilledButton.icon(
-                            style: FilledButton.styleFrom(
-                              backgroundColor: palette.primary,
-                              foregroundColor: Colors.white,
-                            ),
-                            onPressed: controller.createLiveMatch,
-                            icon: const Icon(Icons.add_link, size: 18),
-                            label: const Text('Create live match'),
-                          ),
-                          const SizedBox(height: 10),
-                          codeField,
-                          const SizedBox(height: 10),
-                          joinButton,
-                        ],
-                      )
-                    : Row(
-                        children: [
-                          Expanded(
-                            child: FilledButton.icon(
-                              style: FilledButton.styleFrom(
-                                backgroundColor: palette.primary,
-                                foregroundColor: Colors.white,
-                              ),
-                              onPressed: controller.createLiveMatch,
-                              icon: const Icon(Icons.add_link, size: 18),
-                              label: const Text('Create live match'),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(flex: 2, child: codeField),
-                          const SizedBox(width: 10),
-                          Expanded(child: joinButton),
-                        ],
-                      );
-              },
-            ),
-          if (controller.liveMatchMessage != null) ...[
-            const SizedBox(height: 10),
-            Text(
-              controller.liveMatchMessage!,
-              style: TextStyle(
-                color: palette.textMuted,
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title, required this.palette});
+  const _SectionTitle({required this.title, this.icon, required this.palette});
 
   final String title;
+  final IconData? icon;
   final AppPalette palette;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0, top: 4.0),
-      child: Text(
-        title,
-        style: TextStyle(
-          color: palette.textMuted,
-          fontWeight: FontWeight.w800,
-          fontSize: 12,
-        ),
+      padding: const EdgeInsets.only(bottom: 12.0, top: 8.0),
+      child: Row(
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 16, color: palette.textMuted),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            title.toUpperCase(),
+            style: TextStyle(
+              color: palette.textMuted,
+              fontWeight: FontWeight.w900,
+              fontSize: 12,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ],
       ),
     );
   }

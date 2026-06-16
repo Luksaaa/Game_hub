@@ -2,15 +2,22 @@ import 'package:flutter/material.dart';
 
 import '../models/game_state_controller.dart';
 import '../models/game_settings.dart';
+import '../models/sport_game.dart';
 import '../theme/app_palette.dart';
 
 import '../widgets/dartboard.dart';
 
 class PlayScreen extends StatefulWidget {
-  const PlayScreen({required this.controller, required this.isWide, super.key});
+  const PlayScreen({
+    required this.controller,
+    required this.isWide,
+    required this.game,
+    super.key,
+  });
 
   final GameStateController controller;
   final bool isWide;
+  final SportGame game;
 
   @override
   State<PlayScreen> createState() => _PlayScreenState();
@@ -165,14 +172,7 @@ class _PlayScreenState extends State<PlayScreen> {
     final currentTurnHeader = Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            palette.primary,
-            Color.lerp(palette.primary, Colors.black, 0.15)!,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: palette.background,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -271,27 +271,30 @@ class _PlayScreenState extends State<PlayScreen> {
         const SizedBox(height: 16),
         Expanded(
           child: Center(
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 15,
-                      spreadRadius: 2,
+          child: widget.game.id == 'darts'
+              ? Center(
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 15,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: Dartboard(
+                        enabled: !controller.matchFinished,
+                        onHit: controller.handleHit,
+                        currentTurn: hits,
+                      ),
                     ),
-                  ],
-                ),
-                child: Dartboard(
-                  enabled: !controller.matchFinished,
-                  onHit: controller.handleHit,
-                  currentTurn: hits,
-                ),
-              ),
-            ),
-          ),
+                  ),
+                )
+              : _buildGenericSportUi(theme, palette),
         ),
         const SizedBox(height: 16),
         Row(
@@ -335,7 +338,6 @@ class _PlayScreenState extends State<PlayScreen> {
     );
 
     if (isWide) {
-      // Wide screens get side-by-side dashboard (Board on left, quick Scoreboard on right)
       return Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -354,157 +356,20 @@ class _PlayScreenState extends State<PlayScreen> {
 
     return dartboardPanel;
   }
-}
 
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.onPressed,
-    required this.icon,
-    required this.label,
-    required this.palette,
-    required this.isSecondary,
-  });
-
-  final VoidCallback? onPressed;
-  final IconData icon;
-  final String label;
-  final AppPalette palette;
-  final bool isSecondary;
-
-  @override
-  Widget build(BuildContext context) {
-    if (isSecondary) {
-      return OutlinedButton.icon(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          side: BorderSide(
-            color: onPressed != null
-                ? palette.primary
-                : palette.border.withValues(alpha: 0.3),
-            width: 1.5,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          foregroundColor: palette.primary,
-          disabledForegroundColor: palette.textMuted.withValues(alpha: 0.5),
-        ),
-        icon: Icon(icon, size: 20),
-        label: Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-        ),
-      );
-    }
-
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        backgroundColor: palette.primary,
-        foregroundColor: Colors.white,
-        disabledBackgroundColor: palette.border.withValues(alpha: 0.3),
-        disabledForegroundColor: palette.textMuted.withValues(alpha: 0.5),
-        elevation: 2,
-        shadowColor: palette.primary.withValues(alpha: 0.3),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      icon: Icon(icon, size: 20),
-      label: Text(
-        label,
-        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-      ),
-    );
-  }
-}
-
-class _QuickScoreboardPanel extends StatelessWidget {
-  const _QuickScoreboardPanel({
-    required this.controller,
-    required this.palette,
-  });
-
-  final GameStateController controller;
-  final AppPalette palette;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final players = controller.players;
-    final curIdx = controller.currentPlayerIndex;
-
+  Widget _buildGenericSportUi(ThemeData theme, AppPalette palette) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: palette.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: palette.border),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  'Live Match Score',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: palette.text,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: palette.primarySoft,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  controller.settings.mode == GameMode.x01
-                      ? 'X01 (${controller.settings.startingScore})'
-                      : 'Count Up',
-                  style: TextStyle(
-                    color: palette.primary,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          Icon(widget.game.icon, size: 64, color: widget.game.color),
           const SizedBox(height: 16),
-          Expanded(
-            child: ListView.builder(
-              itemCount: players.length,
-              itemBuilder: (context, index) {
-                final player = players[index];
-                final isCurrent = index == curIdx && !controller.matchFinished;
-
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: isCurrent
-                        ? palette.primarySoft
-                        : palette.surfaceMuted,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isCurrent ? palette.primary : palette.border,
-                      width: isCurrent ? 1.5 : 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
                       CircleAvatar(
                         backgroundColor: Color(player.avatarColorValue),
                         foregroundColor: Colors.white,

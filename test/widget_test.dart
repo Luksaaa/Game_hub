@@ -173,15 +173,6 @@ void main() {
     expect(const AppLocalizations(Locale('ja')).t('game.darts.name'), 'ダーツ');
   });
 
-  test('can create and select a player group preset', () {
-    final controller = GameStateController();
-
-    controller.createPlayerGroup('Duo Night', ['Luka', 'Borna']);
-
-    expect(controller.selectedPlayerGroup?.name, 'Duo Night');
-    expect(controller.players.map((player) => player.name), ['Luka', 'Borna']);
-    expect(controller.playerGroups.length, 2);
-  });
 
   test('tracks the most frequently hit dartboard number', () {
     const player = PlayerScore(

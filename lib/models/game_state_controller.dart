@@ -41,12 +41,8 @@ class GameStateController extends ChangeNotifier {
   GameStateController() {
     _initializeServices();
 
-    // Initialize default profiles
-    _profiles.addAll([
-      PlayerProfile(name: 'Marko', avatarColorValue: 0xFF0F8B6B),
-      PlayerProfile(name: 'Luka', avatarColorValue: 0xFFC7352F),
-      PlayerProfile(name: 'Borna', avatarColorValue: 0xFFF6D77B),
-    ]);
+    // Start with empty profiles and match
+    _resetMatch();
 
     // Setup initial match
     _resetMatch();
@@ -109,29 +105,6 @@ class GameStateController extends ChangeNotifier {
   final List<PlayerProfile> _profiles = [];
   List<PlayerProfile> get profiles => List.unmodifiable(_profiles);
 
-  final List<PlayerGroupPreset> _playerGroups = [
-    PlayerGroupPreset(
-      id: 'default-home-group',
-      name: 'Home darts crew',
-      playerNames: const ['Marko', 'Luka', 'Borna'],
-      ownerUserId: 'guest',
-      isShared: false,
-    ),
-  ];
-  List<PlayerGroupPreset> get playerGroups => List.unmodifiable(_playerGroups);
-
-  String _selectedPlayerGroupId = 'default-home-group';
-  String get selectedPlayerGroupId => _selectedPlayerGroupId;
-
-  PlayerGroupPreset? get selectedPlayerGroup {
-    for (final group in _playerGroups) {
-      if (group.id == _selectedPlayerGroupId) {
-        return group;
-      }
-    }
-    return _playerGroups.isEmpty ? null : _playerGroups.first;
-  }
-
   final List<FollowedUser> _following = [];
   List<FollowedUser> get following => List.unmodifiable(_following);
 
@@ -156,8 +129,17 @@ class GameStateController extends ChangeNotifier {
   String? _matchMessage;
   String? get matchMessage => _matchMessage;
 
-  PlayerScore get currentPlayer => _players[_currentPlayerIndex];
-  bool get matchFinished => _players.any((p) => p.isWinner);
+  PlayerScore get currentPlayer => _players.isEmpty
+      ? const PlayerScore(
+          name: 'No Players',
+          avatarColorValue: 0xFF9E9E9E,
+          remaining: 0,
+          totalScored: 0,
+          turns: [],
+          isWinner: false,
+        )
+      : _players[_currentPlayerIndex];
+  bool get matchFinished => _players.isEmpty || _players.any((p) => p.isWinner);
 
   // Match history list
   final List<MatchHistoryEntry> _matchHistory = [];
@@ -228,63 +210,6 @@ class GameStateController extends ChangeNotifier {
     _accountMessage = _currentUser.isGuest
         ? 'Guest profile updated locally.'
         : 'Profile updated for this session.';
-    notifyListeners();
-  }
-
-  void createPlayerGroup(String name, List<String> playerNames) {
-    final cleanName = name.trim();
-    final cleanPlayers = playerNames
-        .map((name) => name.trim())
-        .where((name) => name.isNotEmpty)
-        .toSet()
-        .toList();
-    if (cleanName.isEmpty || cleanPlayers.isEmpty) {
-      return;
-    }
-
-    final group = PlayerGroupPreset(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      name: cleanName,
-      playerNames: cleanPlayers,
-      ownerUserId: _currentUser.id,
-      isShared: false,
-    );
-    _playerGroups.add(group);
-    _selectedPlayerGroupId = group.id;
-    _applyPlayerGroup(group);
-    _authRepository.savePlayerGroup(group).catchError((Object error) {
-      _accountMessage = 'Could not sync group to Firebase: $error';
-    });
-    _syncLiveMatch();
-    notifyListeners();
-  }
-
-  void selectPlayerGroup(String groupId) {
-    final group = _playerGroups.where((g) => g.id == groupId).firstOrNull;
-    if (group == null) {
-      return;
-    }
-
-    _selectedPlayerGroupId = group.id;
-    _applyPlayerGroup(group);
-    _syncLiveMatch();
-    notifyListeners();
-  }
-
-  void sharePlayerGroup(String groupId) {
-    final index = _playerGroups.indexWhere((g) => g.id == groupId);
-    if (index == -1) {
-      return;
-    }
-
-    final shared = _playerGroups[index].copyWith(isShared: true);
-    _playerGroups[index] = shared;
-    _authRepository.sharePlayerGroup(shared).catchError((Object error) {
-      _accountMessage = 'Could not share group to Firebase: $error';
-    });
-    _accountMessage = _currentUser.isGuest
-        ? 'Sign in to sync shared groups to Firebase.'
-        : 'Group shared with followers.';
     notifyListeners();
   }
 
@@ -479,52 +404,7 @@ class GameStateController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _applyPlayerGroup(PlayerGroupPreset group) {
-    for (final playerName in group.playerNames) {
-      if (!_profiles.any(
-        (p) => p.name.toLowerCase() == playerName.toLowerCase(),
-      )) {
-        _profiles.add(
-          PlayerProfile(
-            name: playerName,
-            avatarColorValue: _colorForName(playerName),
-          ),
-        );
-      }
-    }
 
-    _players = group.playerNames.map((name) {
-      final profile = _profiles.firstWhere(
-        (p) => p.name.toLowerCase() == name.toLowerCase(),
-        orElse: () =>
-            PlayerProfile(name: name, avatarColorValue: _colorForName(name)),
-      );
-      return PlayerScore(
-        name: profile.name,
-        avatarColorValue: profile.avatarColorValue,
-        remaining: _settings.mode == GameMode.x01 ? _settings.startingScore : 0,
-        totalScored: 0,
-        turns: const [],
-        isWinner: false,
-      );
-    }).toList();
-    _currentTurn.clear();
-    _currentPlayerIndex = 0;
-    _matchMessage = 'Loaded group: ${group.name}.';
-  }
-
-  int _colorForName(String name) {
-    const colors = [
-      0xFF0F8B6B,
-      0xFFC7352F,
-      0xFFF6D77B,
-      0xFF1A6EB4,
-      0xFF8E44AD,
-      0xFFE67E22,
-    ];
-    final hash = name.codeUnits.fold<int>(0, (sum, unit) => sum + unit);
-    return colors[hash % colors.length];
-  }
 
   List<MatchHistoryEntry> get filteredHistory {
     if (_searchQuery.isEmpty) return _matchHistory;

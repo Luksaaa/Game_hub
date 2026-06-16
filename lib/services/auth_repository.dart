@@ -107,27 +107,6 @@ class AuthRepository {
     }
   }
 
-  Future<void> savePlayerGroup(PlayerGroupPreset group) async {
-    if (!_firebaseReady || group.ownerUserId == 'guest') {
-      return;
-    }
-
-    await _db
-        .child('users/${group.ownerUserId}/playerGroups/${group.id}')
-        .set(_groupPayload(group));
-  }
-
-  Future<void> sharePlayerGroup(PlayerGroupPreset group) async {
-    if (!_firebaseReady || group.ownerUserId == 'guest') {
-      return;
-    }
-
-    await _db.child('sharedPlayerGroups/${group.id}').set({
-      ..._groupPayload(group.copyWith(isShared: true)),
-      'sharedAt': ServerValue.timestamp,
-    });
-  }
-
   Future<void> followUser({
     required String ownerUserId,
     required FollowedUser followedUser,
@@ -200,15 +179,4 @@ class AuthRepository {
     app: Firebase.app(),
     databaseURL: databaseUrl,
   ).ref();
-
-  Map<String, Object?> _groupPayload(PlayerGroupPreset group) {
-    return {
-      'id': group.id,
-      'name': group.name,
-      'playerNames': group.playerNames,
-      'ownerUserId': group.ownerUserId,
-      'isShared': group.isShared,
-      'updatedAt': ServerValue.timestamp,
-    };
-  }
 }

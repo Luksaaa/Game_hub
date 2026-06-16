@@ -13,7 +13,7 @@ class GameHubScreen extends StatelessWidget {
     required this.onCreateActivity,
     required this.onThemeModeChanged,
     required this.onLocaleChanged,
-    required this.onOpenDarts,
+    required this.onOpenSport,
     super.key,
   });
 
@@ -28,7 +28,7 @@ class GameHubScreen extends StatelessWidget {
   onCreateActivity;
   final ValueChanged<ThemeMode> onThemeModeChanged;
   final ValueChanged<Locale?> onLocaleChanged;
-  final ValueChanged<BuildContext> onOpenDarts;
+  final ValueChanged<SportGame> onOpenSport;
 
   @override
   Widget build(BuildContext context) {
@@ -77,16 +77,7 @@ class GameHubScreen extends StatelessWidget {
                       return _GameCard(
                         game: game,
                         onTap: () {
-                          if (game.id == 'darts') {
-                            onOpenDarts(context);
-                            return;
-                          }
-
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => ComingSoonGameScreen(game: game),
-                            ),
-                          );
+                          onOpenSport(game);
                         },
                       );
                     }, childCount: games.length),

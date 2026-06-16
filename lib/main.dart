@@ -3,15 +3,14 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'l10n/app_localizations.dart';
 import 'models/game_state_controller.dart';
-import 'models/sport_game.dart';
 import 'theme/app_palette.dart';
-import 'widgets/search_dialog.dart';
-import 'screens/game_hub_screen.dart';
 import 'screens/play_screen.dart';
 import 'screens/scoreboard_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/account_screen.dart';
+import 'screens/game_hub_screen.dart';
+import 'models/sport_game.dart';
 
 void main() {
   runApp(const TargetPointApp());
@@ -27,7 +26,6 @@ class TargetPointApp extends StatefulWidget {
 class _TargetPointAppState extends State<TargetPointApp> {
   ThemeMode _themeMode = ThemeMode.system;
   Locale? _locale;
-  final List<SportGame> _customActivities = [];
 
   @override
   Widget build(BuildContext context) {
@@ -45,60 +43,13 @@ class _TargetPointAppState extends State<TargetPointApp> {
       ],
       theme: _buildTheme(Brightness.light),
       darkTheme: _buildTheme(Brightness.dark),
-      home: DartMatchScreen(
+      home: RootScreen(
         themeMode: _themeMode,
         locale: _locale,
-        customActivities: _customActivities,
-        onCreateActivity: _createCustomActivity,
         onThemeModeChanged: (mode) => setState(() => _themeMode = mode),
         onLocaleChanged: (locale) => setState(() => _locale = locale),
       ),
     );
-  }
-
-  void _createCustomActivity({
-    required String name,
-    required String description,
-    required List<String> participants,
-  }) {
-    final trimmedName = name.trim();
-    if (trimmedName.isEmpty) {
-      return;
-    }
-
-    final colors = [
-      const Color(0xFF7C4DFF),
-      const Color(0xFF00A6A6),
-      const Color(0xFFE65100),
-      const Color(0xFFAD1457),
-      const Color(0xFF546E7A),
-    ];
-    final cleanParticipants = participants
-        .map((participant) => participant.trim())
-        .where((participant) => participant.isNotEmpty)
-        .toSet()
-        .toList();
-
-    setState(() {
-      _customActivities.insert(
-        0,
-        SportGame(
-          id: 'custom-${DateTime.now().millisecondsSinceEpoch}',
-          name: trimmedName,
-          subtitle: description.trim().isEmpty
-              ? 'Custom competition with your own rules'
-              : description.trim(),
-          icon: Icons.emoji_events,
-          color: colors[_customActivities.length % colors.length],
-          status: SportGameStatus.planned,
-          modes: cleanParticipants.isEmpty
-              ? const ['Custom rules']
-              : cleanParticipants.take(3).toList(),
-          participants: cleanParticipants,
-          isCustom: true,
-        ),
-      );
-    });
   }
 
   ThemeData _buildTheme(Brightness brightness) {
@@ -117,12 +68,10 @@ class _TargetPointAppState extends State<TargetPointApp> {
   }
 }
 
-class DartMatchScreen extends StatefulWidget {
-  const DartMatchScreen({
+class RootScreen extends StatefulWidget {
+  const RootScreen({
     required this.themeMode,
     required this.locale,
-    required this.customActivities,
-    required this.onCreateActivity,
     required this.onThemeModeChanged,
     required this.onLocaleChanged,
     super.key,
@@ -130,21 +79,87 @@ class DartMatchScreen extends StatefulWidget {
 
   final ThemeMode themeMode;
   final Locale? locale;
-  final List<SportGame> customActivities;
-  final void Function({
-    required String name,
-    required String description,
-    required List<String> participants,
-  })
-  onCreateActivity;
   final ValueChanged<ThemeMode> onThemeModeChanged;
   final ValueChanged<Locale?> onLocaleChanged;
 
   @override
-  State<DartMatchScreen> createState() => _DartMatchScreenState();
+  State<RootScreen> createState() => _RootScreenState();
 }
 
-class _DartMatchScreenState extends State<DartMatchScreen> {
+class _RootScreenState extends State<RootScreen> {
+  final List<SportGame> _customActivities = [];
+
+  void _handleCreateActivity({
+    required String name,
+    required String description,
+    required List<String> participants,
+  }) {
+    setState(() {
+      _customActivities.add(
+        SportGame(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          name: name,
+          subtitle: description.isNotEmpty ? description : 'Custom rules activity',
+          icon: Icons.sports_kabaddi,
+          color: const Color(0xFF1A6EB4),
+          modes: [description.isNotEmpty ? description : 'Custom Rules'],
+          participants: participants,
+          isCustom: true,
+          status: SportGameStatus.ready,
+        ),
+      );
+    });
+  }
+
+  void _openSport(BuildContext context, SportGame game) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SportMatchScreen(
+          game: game,
+          themeMode: widget.themeMode,
+          locale: widget.locale,
+          onThemeModeChanged: widget.onThemeModeChanged,
+          onLocaleChanged: widget.onLocaleChanged,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GameHubScreen(
+      themeMode: widget.themeMode,
+      locale: widget.locale,
+      customActivities: _customActivities,
+      onCreateActivity: _handleCreateActivity,
+      onThemeModeChanged: widget.onThemeModeChanged,
+      onLocaleChanged: widget.onLocaleChanged,
+      onOpenSport: (game) => _openSport(context, game),
+    );
+  }
+}
+
+class SportMatchScreen extends StatefulWidget {
+  const SportMatchScreen({
+    required this.game,
+    required this.themeMode,
+    required this.locale,
+    required this.onThemeModeChanged,
+    required this.onLocaleChanged,
+    super.key,
+  });
+
+  final SportGame game;
+  final ThemeMode themeMode;
+  final Locale? locale;
+  final ValueChanged<ThemeMode> onThemeModeChanged;
+  final ValueChanged<Locale?> onLocaleChanged;
+
+  @override
+  State<SportMatchScreen> createState() => _SportMatchScreenState();
+}
+
+class _SportMatchScreenState extends State<SportMatchScreen> {
   late final GameStateController _controller;
 
   @override
@@ -210,36 +225,13 @@ class _DartMatchScreenState extends State<DartMatchScreen> {
     );
   }
 
-  void _showSearchDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => SearchDialog(controller: _controller),
-    );
-  }
-
-  void _openActivitiesScreen() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => GameHubScreen(
-          themeMode: widget.themeMode,
-          locale: widget.locale,
-          customActivities: widget.customActivities,
-          onCreateActivity: widget.onCreateActivity,
-          onThemeModeChanged: widget.onThemeModeChanged,
-          onLocaleChanged: widget.onLocaleChanged,
-          onOpenDarts: (context) => Navigator.of(context).pop(),
-        ),
-      ),
-    );
-  }
-
   Widget _buildActiveScreen(bool isWide) {
     return switch (_controller.activeTabIndex) {
-      0 => PlayScreen(controller: _controller, isWide: isWide),
+      0 => PlayScreen(controller: _controller, isWide: isWide, game: widget.game),
       1 => ScoreboardScreen(controller: _controller),
       2 => SettingsScreen(controller: _controller),
       3 => HistoryScreen(controller: _controller),
-      _ => PlayScreen(controller: _controller, isWide: isWide),
+      _ => PlayScreen(controller: _controller, isWide: isWide, game: widget.game),
     };
   }
 
@@ -305,20 +297,6 @@ class _DartMatchScreenState extends State<DartMatchScreen> {
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.apps),
-                                  color: palette.primary,
-                                  tooltip: 'Activities',
-                                  onPressed: _openActivitiesScreen,
-                                ),
-                                const SizedBox(height: 8),
-                                IconButton(
-                                  icon: const Icon(Icons.search),
-                                  color: palette.primary,
-                                  tooltip: 'Search',
-                                  onPressed: _showSearchDialog,
-                                ),
-                                const SizedBox(height: 8),
-                                IconButton(
                                   icon: const Icon(Icons.refresh),
                                   color: palette.primary,
                                   tooltip: 'New Match',
@@ -380,12 +358,12 @@ class _DartMatchScreenState extends State<DartMatchScreen> {
                               label: const Text('Scores'),
                             ),
                             NavigationRailDestination(
-                              icon: const Icon(Icons.settings_outlined),
+                              icon: const Icon(Icons.tune_outlined),
                               selectedIcon: Icon(
-                                Icons.settings,
+                                Icons.tune,
                                 color: palette.primary,
                               ),
-                              label: const Text('Settings'),
+                              label: const Text('Setup'),
                             ),
                             NavigationRailDestination(
                               icon: const Icon(Icons.history_outlined),
@@ -440,7 +418,7 @@ class _DartMatchScreenState extends State<DartMatchScreen> {
                           ),
                         ),
                         Text(
-                          'Darts Scorer',
+                          widget.game.name,
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: palette.primary,
                             fontWeight: FontWeight.bold,
@@ -450,19 +428,9 @@ class _DartMatchScreenState extends State<DartMatchScreen> {
                     ),
                     actions: [
                       IconButton(
-                        icon: const Icon(Icons.apps),
-                        color: palette.text,
-                        tooltip: 'Activities',
-                        onPressed: _openActivitiesScreen,
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.search),
-                        color: palette.text,
-                        onPressed: _showSearchDialog,
-                      ),
-                      IconButton(
                         icon: const Icon(Icons.refresh),
                         color: palette.text,
+                        tooltip: 'New Match',
                         onPressed: _handleNewMatch,
                       ),
                       const SizedBox(width: 4),
@@ -528,9 +496,9 @@ class _DartMatchScreenState extends State<DartMatchScreen> {
                         label: 'Scores',
                       ),
                       BottomNavigationBarItem(
-                        icon: Icon(Icons.settings_outlined),
-                        activeIcon: Icon(Icons.settings),
-                        label: 'Settings',
+                        icon: Icon(Icons.tune_outlined),
+                        activeIcon: Icon(Icons.tune),
+                        label: 'Setup',
                       ),
                       BottomNavigationBarItem(
                         icon: Icon(Icons.history_outlined),

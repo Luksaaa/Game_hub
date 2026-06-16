@@ -73,65 +73,348 @@ class _AccountScreenState extends State<AccountScreen> {
       builder: (context, _) {
         final user = widget.controller.currentUser;
 
-        return DefaultTabController(
-          length: 4,
-          child: Scaffold(
-            backgroundColor: palette.background,
-            appBar: AppBar(
-              backgroundColor: palette.surface,
-              scrolledUnderElevation: 0,
-              shape: Border(bottom: BorderSide(color: palette.border)),
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+        return Scaffold(
+          backgroundColor: palette.background,
+          appBar: AppBar(
+            backgroundColor: palette.surface,
+            scrolledUnderElevation: 0,
+            shape: Border(bottom: BorderSide(color: palette.border)),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+              color: palette.text,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            title: Text(
+              l10n.t(
+                'account.title',
+              ), // You can use a generic "Account" text if this localization key is not perfect.
+              style: theme.textTheme.titleMedium?.copyWith(
                 color: palette.text,
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              title: Text(
-                l10n.t('account.title'),
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: palette.text,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              bottom: TabBar(
-                isScrollable: true,
-                labelColor: palette.primary,
-                unselectedLabelColor: palette.textMuted,
-                indicatorColor: palette.primary,
-                tabs: [
-                  Tab(text: l10n.t('account.profile')),
-                  Tab(text: l10n.t('account.login')),
-                  Tab(text: l10n.t('account.groups')),
-                  Tab(text: l10n.t('account.social')),
-                ],
+                fontWeight: FontWeight.w900,
               ),
             ),
-            body: TabBarView(
-              children: [
-                _ProfileTab(
-                  userInitials: user.initials,
-                  nameController: _nameController,
-                  selectedColor: _selectedColor,
-                  colorOptions: _colorOptions,
-                  palette: palette,
-                  themeMode: widget.themeMode,
-                  locale: widget.locale,
-                  onThemeModeChanged: widget.onThemeModeChanged,
-                  onLocaleChanged: widget.onLocaleChanged,
-                  onColorSelected: (color) =>
-                      setState(() => _selectedColor = color),
-                  onSave: _saveProfile,
+          ),
+          body: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              // Profile Section
+              _SectionHeader(
+                title: l10n.t('account.profile'),
+                palette: palette,
+              ),
+              _Panel(
+                palette: palette,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundColor: Color(_selectedColor),
+                          foregroundColor: Colors.white,
+                          child: Text(
+                            user.initials,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: TextField(
+                            controller: _nameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Profile name',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 10,
+                      children: _colorOptions.map((color) {
+                        final isSelected = color == _selectedColor;
+                        return GestureDetector(
+                          onTap: () => setState(() => _selectedColor = color),
+                          child: CircleAvatar(
+                            radius: 18,
+                            backgroundColor: Color(color),
+                            child: isSelected
+                                ? const Icon(
+                                    Icons.check,
+                                    color: Colors.white,
+                                    size: 18,
+                                  )
+                                : null,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: palette.primary,
+                      ),
+                      onPressed: _saveProfile,
+                      icon: const Icon(Icons.save),
+                      label: const Text('Save profile'),
+                    ),
+                  ],
                 ),
-                _LoginTab(controller: widget.controller, palette: palette),
-                _GroupsTab(controller: widget.controller, palette: palette),
-                _SocialTab(
-                  controller: widget.controller,
-                  followController: _followController,
-                  palette: palette,
-                  onFollow: _followUser,
+              ),
+
+              const SizedBox(height: 24),
+
+              // Login / Sign In Section
+              _SectionHeader(title: l10n.t('account.login'), palette: palette),
+              _Panel(
+                palette: palette,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          user.isGuest ? Icons.person_outline : Icons.person,
+                          color: palette.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          user.isGuest ? 'Guest mode' : 'Signed in',
+                          style: TextStyle(
+                            color: palette.text,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      user.email ?? user.displayName,
+                      style: TextStyle(
+                        color: palette.textMuted,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: palette.primary,
+                      ),
+                      onPressed: widget.controller.isSigningIn
+                          ? null
+                          : widget.controller.signInWithGoogle,
+                      icon: const Icon(Icons.g_mobiledata_rounded),
+                      label: Text(
+                        widget.controller.isSigningIn
+                            ? 'Signing in...'
+                            : 'Continue with Google',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: palette.primary,
+                      ),
+                      onPressed: user.isGuest
+                          ? null
+                          : widget.controller.signOut,
+                      icon: const Icon(Icons.logout),
+                      label: const Text('Use guest mode'),
+                    ),
+                    if (widget.controller.accountMessage != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        widget.controller.accountMessage!,
+                        style: TextStyle(
+                          color: palette.textMuted,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
-            ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // App Settings Section
+              _SectionHeader(title: 'App Settings', palette: palette),
+              _Panel(
+                palette: palette,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      l10n.t('common.theme'),
+                      style: TextStyle(
+                        color: palette.text,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SegmentedButton<ThemeMode>(
+                      segments: [
+                        ButtonSegment(
+                          value: ThemeMode.system,
+                          label: Text(l10n.t('common.system')),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.light,
+                          label: Text(l10n.t('common.light')),
+                        ),
+                        ButtonSegment(
+                          value: ThemeMode.dark,
+                          label: Text(l10n.t('common.dark')),
+                        ),
+                      ],
+                      selected: {widget.themeMode},
+                      onSelectionChanged: (selection) =>
+                          widget.onThemeModeChanged(selection.first),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      l10n.t('common.language'),
+                      style: TextStyle(
+                        color: palette.text,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<Locale?>(
+                      initialValue: widget.locale,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: palette.border),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                      ),
+                      items: [
+                        DropdownMenuItem<Locale?>(
+                          value: null,
+                          child: Text(l10n.t('common.system')),
+                        ),
+                        for (final supportedLocale
+                            in AppLocalizations.supportedLocales)
+                          DropdownMenuItem<Locale?>(
+                            value: supportedLocale,
+                            child: Text(
+                              AppLocalizations.languageName(supportedLocale),
+                            ),
+                          ),
+                      ],
+                      onChanged: widget.onLocaleChanged,
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Following Section
+              _SectionHeader(title: l10n.t('account.social'), palette: palette),
+              _Panel(
+                palette: palette,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _followController,
+                            decoration: const InputDecoration(
+                              labelText: 'Follow user (handle or name)',
+                              isDense: true,
+                            ),
+                            onSubmitted: (_) => _followUser(),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        IconButton.filled(
+                          style: IconButton.styleFrom(
+                            backgroundColor: palette.primary,
+                          ),
+                          onPressed: _followUser,
+                          icon: const Icon(Icons.person_add_alt_1),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    if (widget.controller.following.isEmpty)
+                      Text(
+                        'No followed users yet.',
+                        style: TextStyle(
+                          color: palette.textMuted,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      )
+                    else
+                      ...widget.controller.following.map(
+                        (fUser) => ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: CircleAvatar(
+                            backgroundColor: palette.primarySoft,
+                            foregroundColor: palette.primary,
+                            child: Text(
+                              fUser.displayName.substring(0, 1).toUpperCase(),
+                            ),
+                          ),
+                          title: Text(
+                            fUser.displayName,
+                            style: TextStyle(
+                              color: palette.text,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          subtitle: Text(
+                            fUser.handle,
+                            style: TextStyle(color: palette.textMuted),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // About Section
+              _SectionHeader(title: 'About', palette: palette),
+              _Panel(
+                palette: palette,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.info_outline, color: palette.primary),
+                      title: Text(
+                        'Target Point',
+                        style: TextStyle(
+                          color: palette.text,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Version 1.0.0',
+                        style: TextStyle(color: palette.textMuted),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 40),
+            ],
           ),
         );
       },
@@ -139,407 +422,45 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 }
 
-class _ProfileTab extends StatelessWidget {
-  const _ProfileTab({
-    required this.userInitials,
-    required this.nameController,
-    required this.selectedColor,
-    required this.colorOptions,
-    required this.palette,
-    required this.themeMode,
-    required this.locale,
-    required this.onThemeModeChanged,
-    required this.onLocaleChanged,
-    required this.onColorSelected,
-    required this.onSave,
-  });
-
-  final String userInitials;
-  final TextEditingController nameController;
-  final int selectedColor;
-  final List<int> colorOptions;
-  final AppPalette palette;
-  final ThemeMode themeMode;
-  final Locale? locale;
-  final ValueChanged<ThemeMode> onThemeModeChanged;
-  final ValueChanged<Locale?> onLocaleChanged;
-  final ValueChanged<int> onColorSelected;
-  final VoidCallback onSave;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _Panel(
-          palette: palette,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Color(selectedColor),
-                    foregroundColor: Colors.white,
-                    child: Text(
-                      userInitials,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: TextField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Profile name',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 10,
-                children: colorOptions.map((color) {
-                  final isSelected = color == selectedColor;
-                  return GestureDetector(
-                    onTap: () => onColorSelected(color),
-                    child: CircleAvatar(
-                      radius: 18,
-                      backgroundColor: Color(color),
-                      child: isSelected
-                          ? const Icon(
-                              Icons.check,
-                              color: Colors.white,
-                              size: 18,
-                            )
-                          : null,
-                    ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: onSave,
-                icon: const Icon(Icons.save),
-                label: const Text('Save profile'),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        _Panel(
-          palette: palette,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _PanelTitle(title: l10n.t('common.theme'), palette: palette),
-              const SizedBox(height: 10),
-              SegmentedButton<ThemeMode>(
-                segments: [
-                  ButtonSegment(
-                    value: ThemeMode.system,
-                    label: Text(l10n.t('common.system')),
-                  ),
-                  ButtonSegment(
-                    value: ThemeMode.light,
-                    label: Text(l10n.t('common.light')),
-                  ),
-                  ButtonSegment(
-                    value: ThemeMode.dark,
-                    label: Text(l10n.t('common.dark')),
-                  ),
-                ],
-                selected: {themeMode},
-                onSelectionChanged: (selection) =>
-                    onThemeModeChanged(selection.first),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        _Panel(
-          palette: palette,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _PanelTitle(title: l10n.t('common.language'), palette: palette),
-              const SizedBox(height: 10),
-              DropdownButtonFormField<Locale?>(
-                initialValue: locale,
-                decoration: const InputDecoration(border: OutlineInputBorder()),
-                items: [
-                  DropdownMenuItem<Locale?>(
-                    value: null,
-                    child: Text(l10n.t('common.system')),
-                  ),
-                  for (final supportedLocale
-                      in AppLocalizations.supportedLocales)
-                    DropdownMenuItem<Locale?>(
-                      value: supportedLocale,
-                      child: Text(
-                        AppLocalizations.languageName(supportedLocale),
-                      ),
-                    ),
-                ],
-                onChanged: onLocaleChanged,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _LoginTab extends StatelessWidget {
-  const _LoginTab({required this.controller, required this.palette});
-
-  final GameStateController controller;
-  final AppPalette palette;
-
-  @override
-  Widget build(BuildContext context) {
-    final user = controller.currentUser;
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _Panel(
-          palette: palette,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _PanelTitle(
-                title: user.isGuest ? 'Guest mode' : 'Signed in',
-                palette: palette,
-              ),
-              const SizedBox(height: 6),
-              Text(
-                user.email ?? user.displayName,
-                style: TextStyle(
-                  color: palette.textMuted,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 14),
-              FilledButton.icon(
-                onPressed: controller.isSigningIn
-                    ? null
-                    : controller.signInWithGoogle,
-                icon: const Icon(Icons.g_mobiledata_rounded),
-                label: Text(
-                  controller.isSigningIn
-                      ? 'Signing in...'
-                      : 'Continue with Google',
-                ),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: user.isGuest ? null : controller.signOut,
-                icon: const Icon(Icons.person_outline),
-                label: const Text('Use guest mode'),
-              ),
-              if (controller.accountMessage != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  controller.accountMessage!,
-                  style: TextStyle(
-                    color: palette.textMuted,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _GroupsTab extends StatelessWidget {
-  const _GroupsTab({required this.controller, required this.palette});
-
-  final GameStateController controller;
-  final AppPalette palette;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: controller.playerGroups.map((group) {
-        final isSelected = group.id == controller.selectedPlayerGroupId;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: _Panel(
-            palette: palette,
-            highlighted: isSelected,
-            child: ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                group.isShared ? Icons.public : Icons.group,
-                color: isSelected ? palette.primary : palette.textMuted,
-              ),
-              title: Text(
-                group.name,
-                style: TextStyle(
-                  color: palette.text,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              subtitle: Text(
-                group.playerNames.join(', '),
-                style: TextStyle(
-                  color: palette.textMuted,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              trailing: TextButton(
-                onPressed: () => controller.sharePlayerGroup(group.id),
-                child: Text(group.isShared ? 'Shared' : 'Share'),
-              ),
-              onTap: () => controller.selectPlayerGroup(group.id),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
-
-class _SocialTab extends StatelessWidget {
-  const _SocialTab({
-    required this.controller,
-    required this.followController,
-    required this.palette,
-    required this.onFollow,
-  });
-
-  final GameStateController controller;
-  final TextEditingController followController;
-  final AppPalette palette;
-  final VoidCallback onFollow;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _Panel(
-          palette: palette,
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: followController,
-                  decoration: const InputDecoration(
-                    labelText: 'User handle or name',
-                  ),
-                  onSubmitted: (_) => onFollow(),
-                ),
-              ),
-              const SizedBox(width: 10),
-              IconButton.filled(
-                onPressed: onFollow,
-                icon: const Icon(Icons.person_add_alt_1),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (controller.following.isEmpty)
-          _Panel(
-            palette: palette,
-            child: Text(
-              'No followed users yet.',
-              style: TextStyle(
-                color: palette.textMuted,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          )
-        else
-          ...controller.following.map(
-            (user) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _Panel(
-                palette: palette,
-                child: ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: CircleAvatar(
-                    backgroundColor: palette.primarySoft,
-                    foregroundColor: palette.primary,
-                    child: Text(user.displayName.substring(0, 1).toUpperCase()),
-                  ),
-                  title: Text(
-                    user.displayName,
-                    style: TextStyle(
-                      color: palette.text,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  subtitle: Text(
-                    user.handle,
-                    style: TextStyle(color: palette.textMuted),
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _Panel extends StatelessWidget {
-  const _Panel({
-    required this.palette,
-    required this.child,
-    this.highlighted = false,
-  });
-
-  final AppPalette palette;
-  final Widget child;
-  final bool highlighted;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: highlighted ? palette.primarySoft : palette.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: highlighted ? palette.primary : palette.border,
-        ),
-      ),
-      child: child,
-    );
-  }
-}
-
-class _PanelTitle extends StatelessWidget {
-  const _PanelTitle({required this.title, required this.palette});
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title, required this.palette});
 
   final String title;
   final AppPalette palette;
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: TextStyle(
-        color: palette.text,
-        fontWeight: FontWeight.w900,
-        fontSize: 16,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0, left: 4.0),
+      child: Text(
+        title.toUpperCase(),
+        style: TextStyle(
+          color: palette.textMuted,
+          fontWeight: FontWeight.w900,
+          fontSize: 12,
+          letterSpacing: 1.2,
+        ),
       ),
+    );
+  }
+}
+
+class _Panel extends StatelessWidget {
+  const _Panel({required this.palette, required this.child});
+
+  final AppPalette palette;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: palette.border),
+      ),
+      child: child,
     );
   }
 }
