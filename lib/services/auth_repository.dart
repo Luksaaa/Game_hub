@@ -275,6 +275,17 @@ class AuthRepository {
     });
   }
 
+  Future<void> removeUserSession({
+    required String userId,
+    required String sessionId,
+  }) async {
+    if (!_firebaseReady || userId == 'guest') {
+      return;
+    }
+
+    await _db.child('userSessions/$userId/$sessionId').remove();
+  }
+
   Future<void> addSessionMember({
     required String sessionId,
     required UserSession user,

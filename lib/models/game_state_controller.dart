@@ -398,6 +398,54 @@ class GameStateController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> leaveGroup() async {
+    final sessionId = _liveMatchId;
+    if (sessionId == null || _currentUser.isGuest) {
+      await leaveLiveMatch();
+      return;
+    }
+
+    try {
+      final payload = _livePayload();
+      final members = Map<String, Object?>.from(
+        payload['members'] as Map<String, Object?>,
+      )..remove(_currentUser.id);
+      final players = _players
+          .where((player) => player.userId != _currentUser.id)
+          .map(_playerToMap)
+          .toList();
+      final participants = _players
+          .where((player) => player.userId != _currentUser.id)
+          .map(_playerToParticipantMap)
+          .toList();
+
+      await _authRepository.saveSession(sessionId, {
+        ...payload,
+        'members': members,
+        'players': players,
+        'participants': participants,
+        'updatedByUserId': _currentUser.id,
+      });
+      await _authRepository.removeUserSession(
+        userId: _currentUser.id,
+        sessionId: sessionId,
+      );
+    } catch (error) {
+      _liveMatchMessage = 'Could not leave group: $error';
+      notifyListeners();
+      return;
+    }
+
+    _players.removeWhere((player) => player.userId == _currentUser.id);
+    _currentTurn.clear();
+    _currentPlayerIndex = _players.isEmpty
+        ? 0
+        : _currentPlayerIndex % _players.length;
+    await leaveLiveMatch();
+    _liveMatchMessage = 'You left the group.';
+    notifyListeners();
+  }
+
   void _subscribeToLiveMatch(String matchId) {
     _liveMatchSubscription?.cancel();
     _liveMatchSubscription = _authRepository.watchSession(matchId).listen((

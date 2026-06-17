@@ -647,6 +647,12 @@ class _GroupPanel extends StatelessWidget {
                   icon: const Icon(Icons.login, size: 18),
                   label: const Text('Join'),
                 ),
+                if (activeSessionId != null)
+                  OutlinedButton.icon(
+                    onPressed: controller.leaveGroup,
+                    icon: const Icon(Icons.logout, size: 18),
+                    label: const Text('Leave'),
+                  ),
               ],
             ),
           ],
