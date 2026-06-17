@@ -3,9 +3,11 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>452229037121-4hqih4ccfrv26ap4vbqp5hu1q7trk32v.apps.googleusercontent.com</string>
+	<string>452229037121-9eqj4h4dreiscfofpbrcvtme71h8t016.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.452229037121-4hqih4ccfrv26ap4vbqp5hu1q7trk32v</string>
+	<string>com.googleusercontent.apps.452229037121-9eqj4h4dreiscfofpbrcvtme71h8t016</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>452229037121-gqj5pdfs720ofmto8ssnur2ajpg8748m.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
 	<string>AIzaSyD0KtOE_nHZr4c5FL3dFD1alM7fXUDFBjo</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +15,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.luksa.targetpoint</string>
+	<string>com.luksa.gamehub</string>
 	<key>PROJECT_ID</key>
 	<string>targetpoint-c57ff</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,7 +31,7 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:452229037121:ios:19928e2402bbbe6e3bdac0</string>
+	<string>1:452229037121:ios:62f4ffc9d2c5aab73bdac0</string>
 	<key>DATABASE_URL</key>
 	<string>https://targetpoint-c57ff-default-rtdb.europe-west1.firebasedatabase.app</string>
 </dict>

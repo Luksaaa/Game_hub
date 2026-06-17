@@ -8,17 +8,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:452229037121:android:91415d602a0e13763bdac0",
+        "mobilesdk_app_id": "1:452229037121:android:7df770cd19c588f73bdac0",
         "android_client_info": {
-          "package_name": "com.luksa.targetpoint"
+          "package_name": "com.luksa.gamehub"
         }
       },
       "oauth_client": [
         {
-          "client_id": "452229037121-gqj5pdfs720ofmto8ssnur2ajpg8748m.apps.googleusercontent.com",
+          "client_id": "452229037121-rj2nuh0j518j9bg0kv9f2kfhfaupi71q.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.luksa.targetpoint",
+            "package_name": "com.luksa.gamehub",
             "certificate_hash": "fa8f88332dd1823236b54fc65da5b4d4394fd2a1"
           }
         },
@@ -43,7 +43,7 @@
               "client_id": "452229037121-4hqih4ccfrv26ap4vbqp5hu1q7trk32v.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.luksa.targetpoint"
+                "bundle_id": "com.luksa.gamehub"
               }
             }
           ]

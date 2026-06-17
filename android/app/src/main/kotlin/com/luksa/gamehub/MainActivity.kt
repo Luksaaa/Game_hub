@@ -1,4 +1,4 @@
-package com.luksa.targetpoint
+package com.luksa.gamehub
 
 import io.flutter.embedding.android.FlutterActivity
 
