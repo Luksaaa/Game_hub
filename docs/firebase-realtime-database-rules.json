@@ -18,6 +18,15 @@
         ".write": "auth != null && auth.uid === $uid"
       }
     },
+    "sportGroupNames": {
+      "$sportId": {
+        ".read": "auth != null",
+        "$normalizedName": {
+          ".write": "auth != null && (!data.exists() ? newData.child('ownerUserId').val() === auth.uid : data.child('ownerUserId').val() === auth.uid)",
+          ".validate": "newData.hasChildren(['sessionId', 'ownerUserId', 'createdAt'])"
+        }
+      }
+    },
     "sessions": {
       "$sessionId": {
         ".read": "auth != null",

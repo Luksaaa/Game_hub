@@ -479,10 +479,15 @@ class GameStateController extends ChangeNotifier {
     }
 
     final normalizedName = _normalizeGroupName(trimmed);
-    final existingName = await _authRepository.fetchSportGroupName(
-      gameId,
-      normalizedName,
-    );
+    Map<String, dynamic>? existingName;
+    try {
+      existingName = await _authRepository.fetchSportGroupName(
+        gameId,
+        normalizedName,
+      );
+    } catch (_) {
+      existingName = null;
+    }
     if (existingName != null) {
       _liveMatchMessage = 'Group name already exists for $gameName.';
       notifyListeners();
@@ -501,21 +506,28 @@ class GameStateController extends ChangeNotifier {
     _liveHostUserId = _currentUser.id;
     _liveMatchMessage = 'Created group $groupCode.';
     _ensureCurrentUserParticipant();
+    final synced = await _syncLiveMatch();
+    if (!synced) {
+      return;
+    }
     _subscribeToLiveMatch(sessionId);
-    await _authRepository.addUserSession(
-      userId: _currentUser.id,
-      sessionId: sessionId,
-      sportId: gameId,
-      sessionName: safeName,
-      role: 'owner',
-    );
-    await _authRepository.reserveSportGroupName(
-      sportId: gameId,
-      normalizedName: normalizedName,
-      sessionId: sessionId,
-      ownerUserId: _currentUser.id,
-    );
-    await _syncLiveMatch();
+    try {
+      await _authRepository.addUserSession(
+        userId: _currentUser.id,
+        sessionId: sessionId,
+        sportId: gameId,
+        sessionName: safeName,
+        role: 'owner',
+      );
+      await _authRepository.reserveSportGroupName(
+        sportId: gameId,
+        normalizedName: normalizedName,
+        sessionId: sessionId,
+        ownerUserId: _currentUser.id,
+      );
+    } catch (_) {
+      _liveMatchMessage = 'Created group $groupCode.';
+    }
     notifyListeners();
   }
 
@@ -635,17 +647,19 @@ class GameStateController extends ChangeNotifier {
     });
   }
 
-  Future<void> _syncLiveMatch() async {
+  Future<bool> _syncLiveMatch() async {
     final matchId = _liveMatchId;
     if (matchId == null || _isApplyingRemoteState || _currentUser.isGuest) {
-      return;
+      return false;
     }
 
     try {
       await _authRepository.saveSession(matchId, _livePayload());
+      return true;
     } catch (error) {
       _liveMatchMessage = 'Could not sync group: $error';
       notifyListeners();
+      return false;
     }
   }
 
