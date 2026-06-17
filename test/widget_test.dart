@@ -122,6 +122,25 @@ void main() {
     expect(find.text('Turn total: 0'), findsOneWidget);
   });
 
+  testWidgets('save commits a dart turn and clears pending darts', (
+    tester,
+  ) async {
+    await pumpApp(tester);
+    await addManualPlayer(tester, 'Player 1');
+
+    await tester.tapAt(tester.getCenter(find.byType(Dartboard)));
+    await tester.pump();
+    expect(find.text('BULL'), findsOneWidget);
+    expect(find.text('Turn total: 50'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+    await tester.pump();
+
+    expect(find.text('BULL'), findsNothing);
+    expect(find.text('Turn total: 0'), findsOneWidget);
+    expect(find.text('451'), findsWidgets);
+  });
+
   testWidgets('renders on a narrow mobile viewport', (tester) async {
     await pumpApp(tester, size: const Size(390, 844));
     await addManualPlayer(tester, 'Player 1');

@@ -741,7 +741,11 @@ class GameStateController extends ChangeNotifier {
 
   void _applyLivePayload(Map<String, dynamic> payload) {
     final remoteUpdatedAt = _intFromValue(payload['clientUpdatedAt']);
-    if (remoteUpdatedAt != 0 && remoteUpdatedAt < _lastLocalSyncAt) {
+    final hasRecentLocalWrite =
+        _lastLocalSyncAt != 0 &&
+        DateTime.now().millisecondsSinceEpoch - _lastLocalSyncAt < 10000;
+    if (hasRecentLocalWrite &&
+        (remoteUpdatedAt == 0 || remoteUpdatedAt < _lastLocalSyncAt)) {
       return;
     }
 
