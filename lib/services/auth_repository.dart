@@ -137,8 +137,9 @@ class AuthRepository {
         email: user.email ?? googleUser.email,
         avatarColorValue: 0xFF0F8B6B,
         isGuest: false,
+        photoUrl: user.photoURL,
       );
-      await _saveUserProfile(session);
+      await saveUserProfile(session);
       return AuthResult.success(session);
     } catch (error) {
       return AuthResult.failure('Google sign-in failed: $error');
@@ -254,7 +255,7 @@ class AuthRepository {
     });
   }
 
-  Future<void> _saveUserProfile(UserSession session) async {
+  Future<void> saveUserProfile(UserSession session) async {
     if (!_firebaseReady || session.isGuest) {
       return;
     }
@@ -263,6 +264,7 @@ class AuthRepository {
       'displayName': session.displayName,
       'email': session.email,
       'avatarColorValue': session.avatarColorValue,
+      'photoUrl': session.photoUrl,
       'updatedAt': ServerValue.timestamp,
     });
 
@@ -270,6 +272,7 @@ class AuthRepository {
       'displayName': session.displayName,
       'email': session.email,
       'avatarColorValue': session.avatarColorValue,
+      'photoUrl': session.photoUrl,
       'updatedAt': ServerValue.timestamp,
     });
   }

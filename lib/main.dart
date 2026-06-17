@@ -230,6 +230,7 @@ class SportMatchScreen extends StatefulWidget {
 
 class _SportMatchScreenState extends State<SportMatchScreen> {
   late final GameStateController _controller;
+  late final PageController _pageController;
 
   @override
   void initState() {
@@ -238,12 +239,25 @@ class _SportMatchScreenState extends State<SportMatchScreen> {
       gameId: widget.game.id,
       gameName: widget.game.name,
     );
+    _pageController = PageController();
   }
 
   @override
   void dispose() {
+    _pageController.dispose();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _goToTab(int index) {
+    _controller.changeTab(index);
+    if (_pageController.hasClients) {
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 
   void _handleNewMatch() {
@@ -345,6 +359,64 @@ class _SportMatchScreenState extends State<SportMatchScreen> {
     };
   }
 
+  List<Widget> _buildMobilePages() {
+    return [
+      ResponsiveContent(
+        maxWidth: 980,
+        padding: const EdgeInsets.all(16),
+        child: PlayScreen(
+          controller: _controller,
+          isWide: false,
+          game: widget.game,
+        ),
+      ),
+      ResponsiveContent(
+        maxWidth: 980,
+        padding: const EdgeInsets.all(16),
+        child: ScoreboardScreen(controller: _controller),
+      ),
+      ResponsiveContent(
+        maxWidth: 980,
+        padding: const EdgeInsets.all(16),
+        child: SettingsScreen(controller: _controller),
+      ),
+      ResponsiveContent(
+        maxWidth: 980,
+        padding: const EdgeInsets.all(16),
+        child: HistoryScreen(controller: _controller),
+      ),
+    ];
+  }
+
+  Widget _buildAccountAvatar(AppPalette palette, {double size = 38}) {
+    final user = _controller.currentUser;
+    final photoUrl = user.photoUrl;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: palette.primary, width: 2),
+        color: Color(user.avatarColorValue),
+        image: photoUrl == null || photoUrl.isEmpty
+            ? null
+            : DecorationImage(image: NetworkImage(photoUrl), fit: BoxFit.cover),
+      ),
+      child: photoUrl == null || photoUrl.isEmpty
+          ? Center(
+              child: Text(
+                user.initials,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: size * 0.36,
+                ),
+              ),
+            )
+          : null,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -425,32 +497,7 @@ class _SportMatchScreenState extends State<SportMatchScreen> {
                                   child: InkWell(
                                     onTap: _openAccountScreen,
                                     customBorder: const CircleBorder(),
-                                    child: Container(
-                                      width: 38,
-                                      height: 38,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: palette.primary,
-                                          width: 2,
-                                        ),
-                                        color: Color(
-                                          _controller
-                                              .currentUser
-                                              .avatarColorValue,
-                                        ),
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          _controller.currentUser.initials,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w900,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
+                                    child: _buildAccountAvatar(palette),
                                   ),
                                 ),
                                 const SizedBox(height: 16),
@@ -562,43 +609,20 @@ class _SportMatchScreenState extends State<SportMatchScreen> {
                         message: 'Account & Settings',
                         child: GestureDetector(
                           onTap: _openAccountScreen,
-                          child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: palette.primary,
-                                width: 2.5,
-                              ),
-                              color: Color(
-                                _controller.currentUser.avatarColorValue,
-                              ),
-                            ),
-                            child: Center(
-                              child: Text(
-                                _controller.currentUser.initials,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          ),
+                          child: _buildAccountAvatar(palette, size: 36),
                         ),
                       ),
                       const SizedBox(width: 12),
                     ],
                   ),
-                  body: ResponsiveContent(
-                    maxWidth: 980,
-                    padding: const EdgeInsets.all(16),
-                    child: _buildActiveScreen(false),
+                  body: PageView(
+                    controller: _pageController,
+                    onPageChanged: _controller.changeTab,
+                    children: _buildMobilePages(),
                   ),
                   bottomNavigationBar: BottomNavigationBar(
                     currentIndex: _controller.activeTabIndex,
-                    onTap: _controller.changeTab,
+                    onTap: _goToTab,
                     type: BottomNavigationBarType.fixed,
                     backgroundColor: palette.surface,
                     selectedItemColor: palette.primary,

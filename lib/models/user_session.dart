@@ -5,6 +5,7 @@ class UserSession {
     required this.email,
     required this.avatarColorValue,
     required this.isGuest,
+    this.photoUrl,
   });
 
   final String id;
@@ -12,6 +13,7 @@ class UserSession {
   final String? email;
   final int avatarColorValue;
   final bool isGuest;
+  final String? photoUrl;
 
   String get initials {
     final trimmed = displayName.trim();
@@ -27,6 +29,7 @@ class UserSession {
     String? email,
     int? avatarColorValue,
     bool? isGuest,
+    String? photoUrl,
   }) {
     return UserSession(
       id: id ?? this.id,
@@ -34,6 +37,7 @@ class UserSession {
       email: email ?? this.email,
       avatarColorValue: avatarColorValue ?? this.avatarColorValue,
       isGuest: isGuest ?? this.isGuest,
+      photoUrl: photoUrl ?? this.photoUrl,
     );
   }
 }

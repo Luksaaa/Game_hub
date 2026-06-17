@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/game_state_controller.dart';
+import '../models/user_session.dart';
 import '../theme/app_palette.dart';
 import '../widgets/responsive_content.dart';
 
@@ -27,8 +28,11 @@ class AccountScreen extends StatefulWidget {
 
 class _AccountScreenState extends State<AccountScreen> {
   final _nameController = TextEditingController();
+  final _photoUrlController = TextEditingController();
   final _followController = TextEditingController();
   int _selectedColor = 0xFF0F8B6B;
+  int _selectedSection = 0;
+  String? _lastSyncedUserId;
 
   static const _colorOptions = [
     0xFF0F8B6B,
@@ -42,20 +46,30 @@ class _AccountScreenState extends State<AccountScreen> {
   @override
   void initState() {
     super.initState();
-    final user = widget.controller.currentUser;
-    _nameController.text = user.displayName;
-    _selectedColor = user.avatarColorValue;
+    _syncProfileFields(widget.controller.currentUser);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _photoUrlController.dispose();
     _followController.dispose();
     super.dispose();
   }
 
+  void _syncProfileFields(UserSession user) {
+    _lastSyncedUserId = user.id;
+    _nameController.text = user.displayName;
+    _photoUrlController.text = user.photoUrl ?? '';
+    _selectedColor = user.avatarColorValue;
+  }
+
   void _saveProfile() {
-    widget.controller.updateUserProfile(_nameController.text, _selectedColor);
+    widget.controller.updateUserProfile(
+      _nameController.text,
+      _selectedColor,
+      photoUrl: _photoUrlController.text.trim(),
+    );
   }
 
   void _followUser() {
@@ -73,6 +87,9 @@ class _AccountScreenState extends State<AccountScreen> {
       listenable: widget.controller,
       builder: (context, _) {
         final user = widget.controller.currentUser;
+        if (_lastSyncedUserId != user.id) {
+          _syncProfileFields(user);
+        }
 
         return Scaffold(
           backgroundColor: palette.background,
@@ -86,9 +103,7 @@ class _AccountScreenState extends State<AccountScreen> {
               onPressed: () => Navigator.of(context).pop(),
             ),
             title: Text(
-              l10n.t(
-                'account.title',
-              ), // You can use a generic "Account" text if this localization key is not perfect.
+              l10n.t('account.title'),
               style: theme.textTheme.titleMedium?.copyWith(
                 color: palette.text,
                 fontWeight: FontWeight.w900,
@@ -96,336 +111,72 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
           ),
           body: ResponsiveContent(
-            maxWidth: 980,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
-            child: ListView(
+            maxWidth: 720,
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Profile Section
-                _SectionHeader(
-                  title: l10n.t('account.profile'),
+                _AccountSummary(
+                  user: user,
+                  selectedColor: _selectedColor,
                   palette: palette,
                 ),
-                _Panel(
-                  palette: palette,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                const SizedBox(height: 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 30,
-                            backgroundColor: Color(_selectedColor),
-                            foregroundColor: Colors.white,
-                            child: Text(
-                              user.initials,
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: TextField(
-                              controller: _nameController,
-                              decoration: const InputDecoration(
-                                labelText: 'Profile name',
-                              ),
-                            ),
-                          ),
-                        ],
+                      _SectionChip(
+                        label: l10n.t('account.profile'),
+                        icon: Icons.person_outline,
+                        selected: _selectedSection == 0,
+                        onTap: () => setState(() => _selectedSection = 0),
                       ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 10,
-                        children: _colorOptions.map((color) {
-                          final isSelected = color == _selectedColor;
-                          return GestureDetector(
-                            onTap: () => setState(() => _selectedColor = color),
-                            child: CircleAvatar(
-                              radius: 18,
-                              backgroundColor: Color(color),
-                              child: isSelected
-                                  ? const Icon(
-                                      Icons.check,
-                                      color: Colors.white,
-                                      size: 18,
-                                    )
-                                  : null,
-                            ),
-                          );
-                        }).toList(),
+                      _SectionChip(
+                        label: l10n.t('account.login'),
+                        icon: Icons.login,
+                        selected: _selectedSection == 1,
+                        onTap: () => setState(() => _selectedSection = 1),
                       ),
-                      const SizedBox(height: 16),
-                      FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: palette.primary,
-                        ),
-                        onPressed: _saveProfile,
-                        icon: const Icon(Icons.save),
-                        label: const Text('Save profile'),
+                      _SectionChip(
+                        label: 'Settings',
+                        icon: Icons.tune,
+                        selected: _selectedSection == 2,
+                        onTap: () => setState(() => _selectedSection = 2),
+                      ),
+                      _SectionChip(
+                        label: l10n.t('account.social'),
+                        icon: Icons.group_outlined,
+                        selected: _selectedSection == 3,
+                        onTap: () => setState(() => _selectedSection = 3),
+                      ),
+                      _SectionChip(
+                        label: 'About',
+                        icon: Icons.info_outline,
+                        selected: _selectedSection == 4,
+                        onTap: () => setState(() => _selectedSection = 4),
                       ),
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 24),
-
-                // Login / Sign In Section
-                _SectionHeader(
-                  title: l10n.t('account.login'),
-                  palette: palette,
-                ),
-                _Panel(
-                  palette: palette,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            user.isGuest ? Icons.person_outline : Icons.person,
-                            color: palette.primary,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            user.isGuest ? 'Guest mode' : 'Signed in',
-                            style: TextStyle(
-                              color: palette.text,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        user.email ?? user.displayName,
-                        style: TextStyle(
-                          color: palette.textMuted,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: palette.primary,
-                        ),
-                        onPressed: widget.controller.isSigningIn
-                            ? null
-                            : widget.controller.signInWithGoogle,
-                        icon: const Icon(Icons.g_mobiledata_rounded),
-                        label: Text(
-                          widget.controller.isSigningIn
-                              ? 'Signing in...'
-                              : 'Continue with Google',
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: palette.primary,
-                        ),
-                        onPressed: user.isGuest
-                            ? null
-                            : widget.controller.signOut,
-                        icon: const Icon(Icons.logout),
-                        label: const Text('Use guest mode'),
-                      ),
-                      if (widget.controller.accountMessage != null) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          widget.controller.accountMessage!,
-                          style: TextStyle(
-                            color: palette.textMuted,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 160),
+                    child: ListView(
+                      key: ValueKey(_selectedSection),
+                      children: [
+                        switch (_selectedSection) {
+                          0 => _buildProfileSection(user, palette),
+                          1 => _buildLoginSection(user, palette),
+                          2 => _buildSettingsSection(l10n, palette),
+                          3 => _buildSocialSection(palette),
+                          _ => _buildAboutSection(palette),
+                        },
                       ],
-                    ],
+                    ),
                   ),
                 ),
-
-                const SizedBox(height: 24),
-
-                // App Settings Section
-                _SectionHeader(title: 'App Settings', palette: palette),
-                _Panel(
-                  palette: palette,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        l10n.t('common.theme'),
-                        style: TextStyle(
-                          color: palette.text,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      SegmentedButton<ThemeMode>(
-                        segments: [
-                          ButtonSegment(
-                            value: ThemeMode.system,
-                            label: Text(l10n.t('common.system')),
-                          ),
-                          ButtonSegment(
-                            value: ThemeMode.light,
-                            label: Text(l10n.t('common.light')),
-                          ),
-                          ButtonSegment(
-                            value: ThemeMode.dark,
-                            label: Text(l10n.t('common.dark')),
-                          ),
-                        ],
-                        selected: {widget.themeMode},
-                        onSelectionChanged: (selection) =>
-                            widget.onThemeModeChanged(selection.first),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        l10n.t('common.language'),
-                        style: TextStyle(
-                          color: palette.text,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      DropdownButtonFormField<Locale?>(
-                        initialValue: widget.locale,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: palette.border),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                        ),
-                        items: [
-                          DropdownMenuItem<Locale?>(
-                            value: null,
-                            child: Text(l10n.t('common.system')),
-                          ),
-                          for (final supportedLocale
-                              in AppLocalizations.supportedLocales)
-                            DropdownMenuItem<Locale?>(
-                              value: supportedLocale,
-                              child: Text(
-                                AppLocalizations.languageName(supportedLocale),
-                              ),
-                            ),
-                        ],
-                        onChanged: widget.onLocaleChanged,
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Following Section
-                _SectionHeader(
-                  title: l10n.t('account.social'),
-                  palette: palette,
-                ),
-                _Panel(
-                  palette: palette,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _followController,
-                              decoration: const InputDecoration(
-                                labelText: 'Follow user (handle or name)',
-                                isDense: true,
-                              ),
-                              onSubmitted: (_) => _followUser(),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          IconButton.filled(
-                            style: IconButton.styleFrom(
-                              backgroundColor: palette.primary,
-                            ),
-                            onPressed: _followUser,
-                            icon: const Icon(Icons.person_add_alt_1),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      if (widget.controller.following.isEmpty)
-                        Text(
-                          'No followed users yet.',
-                          style: TextStyle(
-                            color: palette.textMuted,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        )
-                      else
-                        ...widget.controller.following.map(
-                          (fUser) => ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: CircleAvatar(
-                              backgroundColor: palette.primarySoft,
-                              foregroundColor: palette.primary,
-                              child: Text(
-                                fUser.displayName.substring(0, 1).toUpperCase(),
-                              ),
-                            ),
-                            title: Text(
-                              fUser.displayName,
-                              style: TextStyle(
-                                color: palette.text,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            subtitle: Text(
-                              fUser.handle,
-                              style: TextStyle(color: palette.textMuted),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // About Section
-                _SectionHeader(title: 'About', palette: palette),
-                _Panel(
-                  palette: palette,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Icon(
-                          Icons.info_outline,
-                          color: palette.primary,
-                        ),
-                        title: Text(
-                          'Target Point',
-                          style: TextStyle(
-                            color: palette.text,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        subtitle: Text(
-                          'Version 1.0.0',
-                          style: TextStyle(color: palette.textMuted),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 40),
               ],
             ),
           ),
@@ -433,26 +184,457 @@ class _AccountScreenState extends State<AccountScreen> {
       },
     );
   }
+
+  Widget _buildProfileSection(UserSession user, AppPalette palette) {
+    return _Panel(
+      palette: palette,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              GestureDetector(
+                onTap: _showPhotoDialog,
+                child: Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    _ProfileAvatar(
+                      user: user,
+                      selectedColor: _selectedColor,
+                      radius: 34,
+                    ),
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: palette.primary,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: palette.surface, width: 2),
+                      ),
+                      child: const Icon(
+                        Icons.camera_alt,
+                        color: Colors.white,
+                        size: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: TextField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(labelText: 'Profile name'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: _colorOptions.map((color) {
+              final isSelected = color == _selectedColor;
+              return GestureDetector(
+                onTap: () => setState(() => _selectedColor = color),
+                child: CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Color(color),
+                  child: isSelected
+                      ? const Icon(Icons.check, color: Colors.white, size: 18)
+                      : null,
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(backgroundColor: palette.primary),
+            onPressed: _saveProfile,
+            icon: const Icon(Icons.save),
+            label: const Text('Save profile'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoginSection(UserSession user, AppPalette palette) {
+    final isSigningIn = widget.controller.isSigningIn;
+    return _Panel(
+      palette: palette,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(
+                user.isGuest ? Icons.person_outline : Icons.verified_user,
+                color: palette.primary,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  user.isGuest ? 'Guest mode' : 'Signed in',
+                  style: TextStyle(
+                    color: palette.text,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            user.email ?? user.displayName,
+            style: TextStyle(
+              color: palette.textMuted,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 14),
+          if (user.isGuest)
+            FilledButton.icon(
+              style: FilledButton.styleFrom(backgroundColor: palette.primary),
+              onPressed: isSigningIn
+                  ? null
+                  : widget.controller.signInWithGoogle,
+              icon: const Icon(Icons.g_mobiledata_rounded),
+              label: Text(
+                isSigningIn ? 'Signing in...' : 'Continue with Google',
+              ),
+            )
+          else
+            FilledButton.icon(
+              style: FilledButton.styleFrom(backgroundColor: palette.primary),
+              onPressed: widget.controller.signOut,
+              icon: const Icon(Icons.logout),
+              label: const Text('Sign out'),
+            ),
+          if (!user.isGuest) ...[
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: widget.controller.signInWithGoogle,
+              icon: const Icon(Icons.g_mobiledata_rounded),
+              label: const Text('Switch Google account'),
+            ),
+          ],
+          if (widget.controller.accountMessage != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              widget.controller.accountMessage!,
+              style: TextStyle(
+                color: palette.textMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsSection(AppLocalizations l10n, AppPalette palette) {
+    return _Panel(
+      palette: palette,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            l10n.t('common.theme'),
+            style: TextStyle(color: palette.text, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 10),
+          SegmentedButton<ThemeMode>(
+            segments: [
+              ButtonSegment(
+                value: ThemeMode.system,
+                label: Text(l10n.t('common.system')),
+              ),
+              ButtonSegment(
+                value: ThemeMode.light,
+                label: Text(l10n.t('common.light')),
+              ),
+              ButtonSegment(
+                value: ThemeMode.dark,
+                label: Text(l10n.t('common.dark')),
+              ),
+            ],
+            selected: {widget.themeMode},
+            onSelectionChanged: (selection) =>
+                widget.onThemeModeChanged(selection.first),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            l10n.t('common.language'),
+            style: TextStyle(color: palette.text, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<Locale?>(
+            initialValue: widget.locale,
+            decoration: InputDecoration(
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: palette.border),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
+            ),
+            items: [
+              DropdownMenuItem<Locale?>(
+                value: null,
+                child: Text(l10n.t('common.system')),
+              ),
+              for (final supportedLocale in AppLocalizations.supportedLocales)
+                DropdownMenuItem<Locale?>(
+                  value: supportedLocale,
+                  child: Text(AppLocalizations.languageName(supportedLocale)),
+                ),
+            ],
+            onChanged: widget.onLocaleChanged,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSocialSection(AppPalette palette) {
+    return _Panel(
+      palette: palette,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _followController,
+                  decoration: const InputDecoration(
+                    labelText: 'Follow user (handle or name)',
+                    isDense: true,
+                  ),
+                  onSubmitted: (_) => _followUser(),
+                ),
+              ),
+              const SizedBox(width: 10),
+              IconButton.filled(
+                style: IconButton.styleFrom(backgroundColor: palette.primary),
+                onPressed: _followUser,
+                icon: const Icon(Icons.person_add_alt_1),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (widget.controller.following.isEmpty)
+            Text(
+              'No followed users yet.',
+              style: TextStyle(
+                color: palette.textMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            )
+          else
+            ...widget.controller.following.map(
+              (fUser) => ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: CircleAvatar(
+                  backgroundColor: palette.primarySoft,
+                  foregroundColor: palette.primary,
+                  child: Text(fUser.displayName.substring(0, 1).toUpperCase()),
+                ),
+                title: Text(
+                  fUser.displayName,
+                  style: TextStyle(
+                    color: palette.text,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                subtitle: Text(
+                  fUser.handle,
+                  style: TextStyle(color: palette.textMuted),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAboutSection(AppPalette palette) {
+    return _Panel(
+      palette: palette,
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(Icons.info_outline, color: palette.primary),
+        title: Text(
+          'Target Point',
+          style: TextStyle(color: palette.text, fontWeight: FontWeight.w900),
+        ),
+        subtitle: Text(
+          'Version 1.0.0',
+          style: TextStyle(color: palette.textMuted),
+        ),
+      ),
+    );
+  }
+
+  void _showPhotoDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        final palette = AppPalette.of(context);
+        return AlertDialog(
+          title: const Text('Profile photo'),
+          content: TextField(
+            controller: _photoUrlController,
+            decoration: const InputDecoration(
+              labelText: 'Image URL',
+              hintText: 'https://...',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                _photoUrlController.clear();
+                Navigator.of(context).pop();
+                setState(() {});
+              },
+              child: const Text('Remove'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(backgroundColor: palette.primary),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _saveProfile();
+                setState(() {});
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, required this.palette});
+class _AccountSummary extends StatelessWidget {
+  const _AccountSummary({
+    required this.user,
+    required this.selectedColor,
+    required this.palette,
+  });
 
-  final String title;
+  final UserSession user;
+  final int selectedColor;
   final AppPalette palette;
 
   @override
   Widget build(BuildContext context) {
+    return _Panel(
+      palette: palette,
+      child: Row(
+        children: [
+          _ProfileAvatar(user: user, selectedColor: selectedColor, radius: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  user.displayName,
+                  style: TextStyle(
+                    color: palette.text,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 17,
+                  ),
+                ),
+                Text(
+                  user.isGuest ? 'Guest mode' : user.email ?? 'Signed in',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: palette.textMuted,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileAvatar extends StatelessWidget {
+  const _ProfileAvatar({
+    required this.user,
+    required this.selectedColor,
+    required this.radius,
+  });
+
+  final UserSession user;
+  final int selectedColor;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final photoUrl = user.photoUrl;
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: Color(selectedColor),
+      foregroundColor: Colors.white,
+      backgroundImage: photoUrl == null || photoUrl.isEmpty
+          ? null
+          : NetworkImage(photoUrl),
+      child: photoUrl == null || photoUrl.isEmpty
+          ? Text(
+              user.initials,
+              style: TextStyle(
+                fontSize: radius * 0.7,
+                fontWeight: FontWeight.w900,
+              ),
+            )
+          : null,
+    );
+  }
+}
+
+class _SectionChip extends StatelessWidget {
+  const _SectionChip({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0, left: 4.0),
-      child: Text(
-        title.toUpperCase(),
-        style: TextStyle(
-          color: palette.textMuted,
-          fontWeight: FontWeight.w900,
-          fontSize: 12,
-          letterSpacing: 1.2,
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        avatar: Icon(
+          icon,
+          size: 16,
+          color: selected ? palette.primary : palette.textMuted,
         ),
+        label: Text(label),
+        selected: selected,
+        selectedColor: palette.primarySoft,
+        labelStyle: TextStyle(
+          color: selected ? palette.primary : palette.text,
+          fontWeight: FontWeight.w900,
+        ),
+        onSelected: (_) => onTap(),
       ),
     );
   }
@@ -470,7 +652,7 @@ class _Panel extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: palette.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: palette.border),
       ),
       child: child,

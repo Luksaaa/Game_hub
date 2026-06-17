@@ -210,7 +210,11 @@ class GameStateController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateUserProfile(String displayName, int avatarColorValue) {
+  void updateUserProfile(
+    String displayName,
+    int avatarColorValue, {
+    String? photoUrl,
+  }) {
     final trimmed = displayName.trim();
     if (trimmed.isEmpty) {
       return;
@@ -219,11 +223,18 @@ class GameStateController extends ChangeNotifier {
     _currentUser = _currentUser.copyWith(
       displayName: trimmed,
       avatarColorValue: avatarColorValue,
+      photoUrl: photoUrl,
     );
     _accountMessage = _currentUser.isGuest
         ? 'Guest profile updated locally.'
         : 'Profile updated for this session.';
     _ensureCurrentUserParticipant();
+    if (!_currentUser.isGuest) {
+      _authRepository.saveUserProfile(_currentUser).catchError((Object error) {
+        _accountMessage = 'Could not save profile: $error';
+        notifyListeners();
+      });
+    }
     _syncLiveMatch();
     notifyListeners();
   }
