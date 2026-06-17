@@ -278,8 +278,7 @@ class _SportMatchScreenState extends State<SportMatchScreen> {
   }
 
   void _handleNewMatch() {
-    final hasThrows = _controller.players.any((p) => p.turns.isNotEmpty);
-    if (hasThrows) {
+    if (_controller.hasActiveMatchProgress) {
       final palette = AppPalette.of(context);
       showDialog(
         context: context,

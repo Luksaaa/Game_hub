@@ -702,6 +702,7 @@ class _GroupDetailScreen extends StatelessWidget {
               );
             }
 
+            final canManageLineup = controller.canManageLineup;
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -833,6 +834,29 @@ class _GroupDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 20),
                   ],
+                  _SectionTitle(
+                    title: 'Device Mode',
+                    icon: Icons.devices,
+                    palette: palette,
+                  ),
+                  Text(
+                    'Choose who can enter throws and scores for this group.',
+                    style: TextStyle(
+                      color: palette.textMuted,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  for (final mode in GroupDeviceMode.values)
+                    _DeviceModeTile(
+                      mode: mode,
+                      selected: controller.deviceMode == mode,
+                      enabled: controller.canManageLineup,
+                      palette: palette,
+                      onTap: () => controller.updateDeviceMode(mode),
+                    ),
+                  const SizedBox(height: 20),
                   Wrap(
                     alignment: WrapAlignment.spaceBetween,
                     crossAxisAlignment: WrapCrossAlignment.center,
@@ -851,7 +875,7 @@ class _GroupDetailScreen extends StatelessWidget {
                           backgroundColor: palette.primary,
                           foregroundColor: Colors.white,
                         ),
-                        onPressed: onAddPlayer,
+                        onPressed: canManageLineup ? onAddPlayer : null,
                         icon: const Icon(Icons.person_add, size: 18),
                         label: const Text('Add Player'),
                       ),
@@ -869,11 +893,16 @@ class _GroupDetailScreen extends StatelessWidget {
                     child: ReorderableListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
+                      buildDefaultDragHandles: false,
                       itemCount: players.length,
-                      onReorder: controller.reorderPlayers,
+                      onReorder: canManageLineup
+                          ? controller.reorderPlayers
+                          : (_, _) {},
                       itemBuilder: (context, index) {
                         final player = players[index];
                         final isOwner = controller.isGroupOwner(player);
+                        final isCurrent =
+                            index == controller.currentPlayerIndex;
                         final canDelete =
                             player.userId == null ||
                             (controller.canManageGroupMembers && !isOwner);
@@ -896,9 +925,12 @@ class _GroupDetailScreen extends StatelessWidget {
                             ),
                           ),
                           subtitle: Text(
-                            isOwner ? 'Group admin' : 'Member',
+                            [
+                              if (isCurrent) 'Now throwing',
+                              isOwner ? 'Group admin' : 'Member',
+                            ].join(' - '),
                             style: TextStyle(
-                              color: isOwner
+                              color: isCurrent || isOwner
                                   ? palette.primary
                                   : palette.textMuted,
                               fontWeight: FontWeight.w700,
@@ -916,13 +948,14 @@ class _GroupDetailScreen extends StatelessWidget {
                                     ? () => onConfirmRemovePlayer(player)
                                     : null,
                               ),
-                              ReorderableDragStartListener(
-                                index: index,
-                                child: Icon(
-                                  Icons.drag_handle,
-                                  color: palette.textMuted,
+                              if (canManageLineup)
+                                ReorderableDragStartListener(
+                                  index: index,
+                                  child: Icon(
+                                    Icons.drag_handle,
+                                    color: palette.textMuted,
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                         );
@@ -1043,6 +1076,85 @@ class _SessionTextField extends StatelessWidget {
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: palette.border),
+        ),
+      ),
+    );
+  }
+}
+
+class _DeviceModeTile extends StatelessWidget {
+  const _DeviceModeTile({
+    required this.mode,
+    required this.selected,
+    required this.enabled,
+    required this.palette,
+    required this.onTap,
+  });
+
+  final GroupDeviceMode mode;
+  final bool selected;
+  final bool enabled;
+  final AppPalette palette;
+  final VoidCallback onTap;
+
+  String get _title {
+    return switch (mode) {
+      GroupDeviceMode.ownDevice => 'Own device',
+      GroupDeviceMode.sharedDevices => 'Shared devices',
+      GroupDeviceMode.adminDevice => 'Admin device',
+    };
+  }
+
+  String get _description {
+    return switch (mode) {
+      GroupDeviceMode.ownDevice =>
+        'Each signed-in player enters only their own turn.',
+      GroupDeviceMode.sharedDevices =>
+        'Any group member can enter the current player turn.',
+      GroupDeviceMode.adminDevice =>
+        'Only the group admin enters throws and scores for everyone.',
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Icon(
+              selected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: selected ? palette.primary : palette.textMuted,
+              size: 22,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _title,
+                    style: TextStyle(
+                      color: enabled ? palette.text : palette.textMuted,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _description,
+                    style: TextStyle(
+                      color: palette.textMuted,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

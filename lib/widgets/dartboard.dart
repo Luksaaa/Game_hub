@@ -4,17 +4,58 @@ import 'package:flutter/material.dart';
 import '../models/dart_hit.dart';
 import '../theme/app_palette.dart';
 
-class Dartboard extends StatelessWidget {
+class Dartboard extends StatefulWidget {
   const Dartboard({
     required this.enabled,
     required this.onHit,
     required this.currentTurn,
+    this.checkoutHint,
     super.key,
   });
 
   final bool enabled;
   final ValueChanged<DartHit> onHit;
   final List<DartHit> currentTurn;
+  final String? checkoutHint;
+
+  @override
+  State<Dartboard> createState() => _DartboardState();
+}
+
+class _DartboardState extends State<Dartboard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _blinkController;
+
+  @override
+  void initState() {
+    super.initState();
+    _blinkController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    if (DartboardCheckoutTarget.parse(widget.checkoutHint) != null) {
+      _blinkController.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant Dartboard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final hasTarget =
+        DartboardCheckoutTarget.parse(widget.checkoutHint) != null;
+    if (hasTarget && !_blinkController.isAnimating) {
+      _blinkController.repeat(reverse: true);
+    } else if (!hasTarget && _blinkController.isAnimating) {
+      _blinkController.stop();
+      _blinkController.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _blinkController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,25 +63,72 @@ class Dartboard extends StatelessWidget {
       builder: (context, constraints) {
         final size = math.min(constraints.maxWidth, constraints.maxHeight);
         return GestureDetector(
-          onTapDown: enabled
+          onTapDown: widget.enabled
               ? (details) {
                   final hit = DartboardGeometry.hitTest(
                     details.localPosition,
                     Size.square(size),
                   );
-                  onHit(hit);
+                  widget.onHit(hit);
                 }
               : null,
-          child: CustomPaint(
-            size: Size.square(size),
-            painter: DartboardPainter(
-              palette: AppPalette.of(context),
-              currentTurn: currentTurn,
+          child: AnimatedBuilder(
+            animation: _blinkController,
+            builder: (context, child) => CustomPaint(
+              size: Size.square(size),
+              painter: DartboardPainter(
+                palette: AppPalette.of(context),
+                currentTurn: widget.currentTurn,
+                checkoutTarget: DartboardCheckoutTarget.parse(
+                  widget.checkoutHint,
+                ),
+                blinkValue: _blinkController.value,
+              ),
             ),
           ),
         );
       },
     );
+  }
+}
+
+class DartboardCheckoutTarget {
+  const DartboardCheckoutTarget({required this.band, this.number});
+
+  final SegmentBand band;
+  final int? number;
+
+  static DartboardCheckoutTarget? parse(String? hint) {
+    if (hint == null || hint.trim().isEmpty) {
+      return null;
+    }
+
+    final first = hint.split('+').first.trim().toUpperCase();
+    if (first == 'BULL') {
+      return const DartboardCheckoutTarget(band: SegmentBand.bull);
+    }
+    if (first == '25') {
+      return const DartboardCheckoutTarget(band: SegmentBand.outerBull);
+    }
+
+    if (first.length < 2) {
+      return null;
+    }
+    final number = int.tryParse(first.substring(1));
+    if (number == null || number < 1 || number > 20) {
+      return null;
+    }
+
+    final band = switch (first[0]) {
+      'D' => SegmentBand.double,
+      'T' => SegmentBand.triple,
+      'S' => SegmentBand.single,
+      _ => null,
+    };
+    if (band == null) {
+      return null;
+    }
+    return DartboardCheckoutTarget(band: band, number: number);
   }
 }
 
@@ -151,10 +239,17 @@ class DartboardGeometry {
 }
 
 class DartboardPainter extends CustomPainter {
-  const DartboardPainter({required this.palette, required this.currentTurn});
+  const DartboardPainter({
+    required this.palette,
+    required this.currentTurn,
+    required this.checkoutTarget,
+    required this.blinkValue,
+  });
 
   final AppPalette palette;
   final List<DartHit> currentTurn;
+  final DartboardCheckoutTarget? checkoutTarget;
+  final double blinkValue;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -239,6 +334,14 @@ class DartboardPainter extends CustomPainter {
         labelOffset - Offset(textPainter.width / 2, textPainter.height / 2),
       );
     }
+
+    _drawCheckoutHighlight(
+      canvas,
+      center,
+      radius,
+      startOffset: startOffset,
+      segmentSweep: segmentSweep,
+    );
 
     // Wires
     final wirePaint = Paint()
@@ -341,7 +444,101 @@ class DartboardPainter extends CustomPainter {
     canvas.drawPath(path, Paint()..color = color);
   }
 
+  void _drawCheckoutHighlight(
+    Canvas canvas,
+    Offset center,
+    double radius, {
+    required double startOffset,
+    required double segmentSweep,
+  }) {
+    final target = checkoutTarget;
+    if (target == null) {
+      return;
+    }
+
+    final alpha = 0.18 + (blinkValue * 0.34);
+    final fill = Paint()
+      ..style = PaintingStyle.fill
+      ..color = const Color(0xFFFFD369).withValues(alpha: alpha);
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = math.max(2, radius * 0.014)
+      ..color = const Color(
+        0xFFFFD369,
+      ).withValues(alpha: 0.55 + blinkValue * 0.35);
+
+    if (target.band == SegmentBand.bull) {
+      canvas.drawCircle(center, radius * 0.055, fill);
+      canvas.drawCircle(center, radius * 0.055, stroke);
+      return;
+    }
+
+    if (target.band == SegmentBand.outerBull) {
+      canvas.drawCircle(center, radius * 0.12, fill);
+      canvas.drawCircle(center, radius * 0.12, stroke);
+      return;
+    }
+
+    final number = target.number;
+    if (number == null) {
+      return;
+    }
+    final index = DartboardGeometry.segmentNumbers.indexOf(number);
+    if (index == -1) {
+      return;
+    }
+
+    final start = startOffset + index * segmentSweep;
+    final (innerRatio, outerRatio) = switch (target.band) {
+      SegmentBand.double => (0.84, 0.98),
+      SegmentBand.triple => (0.52, 0.62),
+      SegmentBand.single => (0.12, 0.84),
+      _ => (0.0, 0.0),
+    };
+    if (outerRatio == 0.0) {
+      return;
+    }
+
+    final path = _ringSegmentPath(
+      center,
+      radius,
+      innerRatio: innerRatio,
+      outerRatio: outerRatio,
+      start: start,
+      sweep: segmentSweep,
+    );
+    canvas.drawPath(path, fill);
+    canvas.drawPath(path, stroke);
+  }
+
+  static Path _ringSegmentPath(
+    Offset center,
+    double radius, {
+    required double innerRatio,
+    required double outerRatio,
+    required double start,
+    required double sweep,
+  }) {
+    return Path()
+      ..arcTo(
+        Rect.fromCircle(center: center, radius: radius * outerRatio),
+        start,
+        sweep,
+        false,
+      )
+      ..arcTo(
+        Rect.fromCircle(center: center, radius: radius * innerRatio),
+        start + sweep,
+        -sweep,
+        false,
+      )
+      ..close();
+  }
+
   @override
   bool shouldRepaint(covariant DartboardPainter oldDelegate) =>
-      oldDelegate.palette != palette || oldDelegate.currentTurn != currentTurn;
+      oldDelegate.palette != palette ||
+      oldDelegate.currentTurn != currentTurn ||
+      oldDelegate.checkoutTarget != checkoutTarget ||
+      oldDelegate.blinkValue != blinkValue;
 }

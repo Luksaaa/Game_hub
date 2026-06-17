@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
@@ -28,6 +30,88 @@ class PlayScreen extends StatefulWidget {
 class _PlayScreenState extends State<PlayScreen> {
   GameStateController get controller => widget.controller;
 
+  OverlayEntry? _notYourTurnEntry;
+  Timer? _notYourTurnTimer;
+
+  void _showNotYourTurnPill() {
+    final palette = AppPalette.of(context);
+    final playerName = controller.currentPlayer.name;
+
+    _notYourTurnTimer?.cancel();
+    _notYourTurnEntry?.remove();
+    _notYourTurnEntry = null;
+
+    final overlay = Overlay.of(context);
+    final top = MediaQuery.paddingOf(context).top + 12;
+    _notYourTurnEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: top,
+        left: 20,
+        right: 20,
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: -28, end: 0),
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          builder: (context, offset, child) => Transform.translate(
+            offset: Offset(0, offset),
+            child: Opacity(
+              opacity: (1 - (offset.abs() / 28)).clamp(0.0, 1.0),
+              child: child,
+            ),
+          ),
+          child: Center(
+            child: Material(
+              color: Colors.transparent,
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 360),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: palette.surface.withValues(alpha: 0.96),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: palette.primary),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.28),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  'Not your turn. Waiting for $playerName.',
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(_notYourTurnEntry!);
+    _notYourTurnTimer = Timer(const Duration(milliseconds: 1700), () {
+      _notYourTurnEntry?.remove();
+      _notYourTurnEntry = null;
+    });
+  }
+
+  @override
+  void dispose() {
+    _notYourTurnTimer?.cancel();
+    _notYourTurnEntry?.remove();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -35,14 +119,15 @@ class _PlayScreenState extends State<PlayScreen> {
     final l10n = AppLocalizations.of(context);
     final hits = controller.currentTurn;
     final sportActions = sportActionsFor(widget.game.id);
+    final canScore = controller.canScoreCurrentTurn;
 
     final actionRow = controller.isDartsGame
         ? Row(
             children: [
               Expanded(
                 child: _ActionButton(
-                  onPressed: hits.isEmpty || controller.matchFinished
-                      ? null
+                  onPressed: hits.isEmpty || !canScore
+                      ? (!canScore ? _showNotYourTurnPill : null)
                       : controller.undoLastHit,
                   icon: Icons.undo,
                   label: l10n.t('action.undo'),
@@ -51,9 +136,9 @@ class _PlayScreenState extends State<PlayScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: _ActionButton(
-                  onPressed: controller.matchFinished
-                      ? null
-                      : controller.addMiss,
+                  onPressed: canScore
+                      ? controller.addMiss
+                      : _showNotYourTurnPill,
                   icon: Icons.radio_button_unchecked,
                   label: l10n.t('action.miss'),
                 ),
@@ -61,9 +146,9 @@ class _PlayScreenState extends State<PlayScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: _ActionButton(
-                  onPressed: hits.isNotEmpty && !controller.matchFinished
+                  onPressed: hits.isNotEmpty && canScore
                       ? controller.commitTurn
-                      : null,
+                      : (!canScore ? _showNotYourTurnPill : null),
                   icon: Icons.check,
                   label: l10n.t('action.saveTurn'),
                   filled: true,
@@ -76,8 +161,8 @@ class _PlayScreenState extends State<PlayScreen> {
               for (int i = 0; i < sportActions.take(4).length; i++) ...[
                 Expanded(
                   child: _ActionButton(
-                    onPressed: controller.players.isEmpty
-                        ? null
+                    onPressed: controller.players.isEmpty || !canScore
+                        ? (!canScore ? _showNotYourTurnPill : null)
                         : () {
                             final action = sportActions[i];
                             controller.applySportAction(
@@ -102,7 +187,11 @@ class _PlayScreenState extends State<PlayScreen> {
     final playPanel = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _CurrentTurnHeader(controller: controller, palette: palette),
+        _CurrentTurnHeader(
+          controller: controller,
+          palette: palette,
+          onBlockedScoreTap: _showNotYourTurnPill,
+        ),
         const SizedBox(height: 14),
         Expanded(
           child: widget.game.id == 'darts'
@@ -111,8 +200,11 @@ class _PlayScreenState extends State<PlayScreen> {
                     aspectRatio: 1,
                     child: Dartboard(
                       enabled: !controller.matchFinished,
-                      onHit: controller.handleHit,
+                      onHit: canScore
+                          ? controller.handleHit
+                          : (_) => _showNotYourTurnPill(),
                       currentTurn: hits,
+                      checkoutHint: controller.checkoutHint,
                     ),
                   ),
                 )
@@ -153,10 +245,15 @@ class _PlayScreenState extends State<PlayScreen> {
 }
 
 class _CurrentTurnHeader extends StatelessWidget {
-  const _CurrentTurnHeader({required this.controller, required this.palette});
+  const _CurrentTurnHeader({
+    required this.controller,
+    required this.palette,
+    required this.onBlockedScoreTap,
+  });
 
   final GameStateController controller;
   final AppPalette palette;
+  final VoidCallback onBlockedScoreTap;
 
   void _showManualDartDialog(BuildContext context, int index) {
     final existing = index < controller.currentTurn.length
@@ -222,6 +319,7 @@ class _CurrentTurnHeader extends StatelessWidget {
     final turnTotal = hits.fold(0, (total, hit) => total + hit.score);
     final isDarts = controller.isDartsGame;
     final checkoutHint = controller.checkoutHint;
+    final canScore = controller.canScoreCurrentTurn;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -280,13 +378,12 @@ class _CurrentTurnHeader extends StatelessWidget {
             Row(
               children: List.generate(3, (index) {
                 final hit = index < hits.length ? hits[index] : null;
-                final isActive =
-                    index == hits.length && !controller.matchFinished;
+                final isActive = index == hits.length && canScore;
                 return Expanded(
                   child: GestureDetector(
-                    onTap: controller.matchFinished
-                        ? null
-                        : () => _showManualDartDialog(context, index),
+                    onTap: canScore
+                        ? () => _showManualDartDialog(context, index)
+                        : onBlockedScoreTap,
                     child: Container(
                       height: 44,
                       margin: EdgeInsets.only(right: index == 2 ? 0 : 8),
@@ -326,7 +423,19 @@ class _CurrentTurnHeader extends StatelessWidget {
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              if (controller.matchMessage != null) ...[
+              if (!canScore && !controller.matchFinished) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Waiting for ${player.name}',
+                    textAlign: TextAlign.end,
+                    style: TextStyle(
+                      color: palette.textMuted,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ] else if (controller.matchMessage != null) ...[
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -342,7 +451,7 @@ class _CurrentTurnHeader extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Checkout: $checkoutHint',
+                    'Out: $checkoutHint',
                     textAlign: TextAlign.end,
                     style: TextStyle(
                       color: palette.accent,

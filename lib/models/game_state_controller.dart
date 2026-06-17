@@ -50,6 +50,8 @@ class GroupMember {
   bool get isOwner => role == 'owner';
 }
 
+enum GroupDeviceMode { ownDevice, sharedDevices, adminDevice }
+
 class UserGameGroup {
   const UserGameGroup({
     required this.sessionId,
@@ -156,6 +158,8 @@ class GameStateController extends ChangeNotifier {
   String? _liveHostUserId;
   String _activeSessionName = 'Personal session';
   String get activeSessionName => _activeSessionName;
+  GroupDeviceMode _deviceMode = GroupDeviceMode.ownDevice;
+  GroupDeviceMode get deviceMode => _deviceMode;
   final Map<String, Map<String, Object?>> _groupMembers = {};
   final List<UserGameGroup> _userGroups = [];
   List<UserGameGroup> get userGroups => List.unmodifiable(_userGroups);
@@ -178,6 +182,34 @@ class GameStateController extends ChangeNotifier {
     return !_currentUser.isGuest &&
         _liveHostUserId != null &&
         _currentUser.id == _liveHostUserId;
+  }
+
+  bool get canManageLineup {
+    return !isLiveMatchActive || canManageGroupMembers;
+  }
+
+  bool get canScoreCurrentTurn {
+    if (_players.isEmpty || matchFinished) {
+      return false;
+    }
+    if (!isLiveMatchActive || _currentUser.isGuest) {
+      return true;
+    }
+
+    if (_deviceMode == GroupDeviceMode.adminDevice) {
+      return canManageGroupMembers;
+    }
+
+    if (_deviceMode == GroupDeviceMode.sharedDevices) {
+      return _players.any((player) => player.userId == _currentUser.id);
+    }
+
+    final player = _players[_currentPlayerIndex.clamp(0, _players.length - 1)];
+    final userId = player.userId;
+    if (userId == null || userId.isEmpty) {
+      return canManageGroupMembers;
+    }
+    return userId == _currentUser.id;
   }
 
   List<PlayerScore> _dedupedPlayers() {
@@ -208,16 +240,7 @@ class GameStateController extends ChangeNotifier {
       );
     }
 
-    final merged = [...byUserId.values, ...localPlayers];
-    merged.sort((a, b) {
-      final aOwner = isGroupOwner(a);
-      final bOwner = isGroupOwner(b);
-      if (aOwner != bOwner) {
-        return aOwner ? -1 : 1;
-      }
-      return a.name.compareTo(b.name);
-    });
-    return merged;
+    return [...byUserId.values, ...localPlayers];
   }
 
   void changeTab(int index) {
@@ -296,6 +319,17 @@ class GameStateController extends ChangeNotifier {
   final List<DartHit> _currentTurn = [];
   List<DartHit> get currentTurn => _currentTurn;
 
+  bool get hasActiveMatchProgress {
+    return _currentTurn.isNotEmpty ||
+        _sportEvents.isNotEmpty ||
+        _players.any(
+          (player) =>
+              player.turns.isNotEmpty ||
+              player.totalScored != 0 ||
+              player.isWinner,
+        );
+  }
+
   int _currentPlayerIndex = 0;
   int get currentPlayerIndex => _currentPlayerIndex;
 
@@ -305,14 +339,6 @@ class GameStateController extends ChangeNotifier {
   int get _scoringPlayerIndex {
     if (_players.isEmpty) {
       return 0;
-    }
-    if (isLiveMatchActive && !_currentUser.isGuest) {
-      final ownIndex = _players.indexWhere(
-        (player) => player.userId == _currentUser.id,
-      );
-      if (ownIndex != -1) {
-        return ownIndex;
-      }
     }
     if (_currentPlayerIndex >= _players.length) {
       return 0;
@@ -726,6 +752,7 @@ class GameStateController extends ChangeNotifier {
     _sportEvents.clear();
     _matchMessage = null;
     _currentPlayerIndex = 0;
+    _deviceMode = GroupDeviceMode.ownDevice;
     _clientRevision = 0;
     _lastLocalSyncAt = 0;
     _players = [
@@ -805,6 +832,7 @@ class GameStateController extends ChangeNotifier {
     _activeGroupCode = null;
     _isLiveHost = false;
     _liveHostUserId = null;
+    _deviceMode = GroupDeviceMode.ownDevice;
     _groupMembers.clear();
     _liveMatchMessage = 'Live match left.';
     notifyListeners();
@@ -908,6 +936,7 @@ class GameStateController extends ChangeNotifier {
       'gameName': gameName,
       'sportId': gameId,
       'sportName': gameName,
+      'deviceMode': _deviceMode.name,
       'hostUserId': _liveHostUserId ?? _currentUser.id,
       'ownerUserId': _liveHostUserId ?? _currentUser.id,
       'updatedByUserId': _currentUser.id,
@@ -954,6 +983,10 @@ class GameStateController extends ChangeNotifier {
           payload['hostUserId'] as String? ??
           payload['ownerUserId'] as String? ??
           _liveHostUserId;
+      _deviceMode = GroupDeviceMode.values.firstWhere(
+        (mode) => mode.name == payload['deviceMode'],
+        orElse: () => GroupDeviceMode.ownDevice,
+      );
       if (remoteRevision > _clientRevision) {
         _clientRevision = remoteRevision;
       }
@@ -1117,22 +1150,30 @@ class GameStateController extends ChangeNotifier {
   }
 
   void reorderPlayers(int oldIndex, int newIndex) {
+    if (!canManageLineup) {
+      _liveMatchMessage = 'Only the group admin can reorder players.';
+      notifyListeners();
+      return;
+    }
     if (oldIndex < newIndex) {
       newIndex -= 1;
     }
     final player = _players.removeAt(oldIndex);
     _players.insert(newIndex, player);
 
-    // Keep active player selection pointing to the correct person
-    if (_currentPlayerIndex == oldIndex) {
-      _currentPlayerIndex = newIndex;
-    } else if (oldIndex < _currentPlayerIndex &&
-        newIndex >= _currentPlayerIndex) {
-      _currentPlayerIndex--;
-    } else if (oldIndex > _currentPlayerIndex &&
-        newIndex <= _currentPlayerIndex) {
-      _currentPlayerIndex++;
+    // The first player in the admin-defined lineup throws next.
+    _currentPlayerIndex = 0;
+    _syncLiveMatch();
+    notifyListeners();
+  }
+
+  void updateDeviceMode(GroupDeviceMode mode) {
+    if (isLiveMatchActive && !canManageGroupMembers) {
+      _liveMatchMessage = 'Only the group admin can change device mode.';
+      notifyListeners();
+      return;
     }
+    _deviceMode = mode;
     _syncLiveMatch();
     notifyListeners();
   }
@@ -1159,7 +1200,11 @@ class GameStateController extends ChangeNotifier {
 
   // Scoring Logic & Actions
   void handleHit(DartHit hit) {
-    if (matchFinished || _currentTurn.length == 3) {
+    if (!canScoreCurrentTurn || _currentTurn.length == 3) {
+      if (!canScoreCurrentTurn && isLiveMatchActive) {
+        _matchMessage = 'Waiting for ${currentPlayer.name}.';
+        notifyListeners();
+      }
       return;
     }
 
@@ -1170,7 +1215,11 @@ class GameStateController extends ChangeNotifier {
   }
 
   void setManualDartScore(int index, int score) {
-    if (matchFinished || index < 0 || index > 2) {
+    if (!canScoreCurrentTurn || index < 0 || index > 2) {
+      if (!canScoreCurrentTurn && isLiveMatchActive) {
+        _matchMessage = 'Waiting for ${currentPlayer.name}.';
+        notifyListeners();
+      }
       return;
     }
 
@@ -1192,7 +1241,7 @@ class GameStateController extends ChangeNotifier {
   }
 
   void undoLastHit() {
-    if (_currentTurn.isEmpty || matchFinished) {
+    if (_currentTurn.isEmpty || !canScoreCurrentTurn) {
       return;
     }
 
@@ -1225,7 +1274,7 @@ class GameStateController extends ChangeNotifier {
   }
 
   void adjustCurrentPlayerScore(int delta) {
-    if (_players.isEmpty || isDartsGame) {
+    if (_players.isEmpty || isDartsGame || !canScoreCurrentTurn) {
       return;
     }
 
@@ -1248,7 +1297,7 @@ class GameStateController extends ChangeNotifier {
     int statDelta = 1,
     bool endsTurn = false,
   }) {
-    if (_players.isEmpty || isDartsGame) {
+    if (_players.isEmpty || isDartsGame || !canScoreCurrentTurn) {
       return;
     }
 
@@ -1331,7 +1380,7 @@ class GameStateController extends ChangeNotifier {
   }
 
   void advanceGenericTurn() {
-    if (_players.isEmpty || isDartsGame) {
+    if (_players.isEmpty || isDartsGame || !canScoreCurrentTurn) {
       return;
     }
 
@@ -1342,7 +1391,7 @@ class GameStateController extends ChangeNotifier {
   }
 
   void commitTurn() {
-    if (_currentTurn.isEmpty) {
+    if (_currentTurn.isEmpty || !canScoreCurrentTurn) {
       return;
     }
 
