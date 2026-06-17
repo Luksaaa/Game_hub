@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'l10n/app_localizations.dart';
 import 'models/game_state_controller.dart';
@@ -28,8 +29,56 @@ class GameHubApp extends StatefulWidget {
 }
 
 class _GameHubAppState extends State<GameHubApp> {
+  static const _themePreferenceKey = 'app_theme_mode';
+  static const _localePreferenceKey = 'app_locale';
+
   ThemeMode _themeMode = ThemeMode.system;
   Locale? _locale;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppPreferences();
+  }
+
+  Future<void> _loadAppPreferences() async {
+    final preferences = await SharedPreferences.getInstance();
+    final savedTheme = preferences.getString(_themePreferenceKey);
+    final savedLocale = preferences.getString(_localePreferenceKey);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _themeMode = switch (savedTheme) {
+        'light' => ThemeMode.light,
+        'dark' => ThemeMode.dark,
+        _ => ThemeMode.system,
+      };
+      _locale = savedLocale == null || savedLocale.isEmpty
+          ? null
+          : Locale(savedLocale);
+    });
+  }
+
+  Future<void> _handleThemeModeChanged(ThemeMode mode) async {
+    setState(() => _themeMode = mode);
+    final preferences = await SharedPreferences.getInstance();
+    if (mode == ThemeMode.system) {
+      await preferences.remove(_themePreferenceKey);
+    } else {
+      await preferences.setString(_themePreferenceKey, mode.name);
+    }
+  }
+
+  Future<void> _handleLocaleChanged(Locale? locale) async {
+    setState(() => _locale = locale);
+    final preferences = await SharedPreferences.getInstance();
+    if (locale == null) {
+      await preferences.remove(_localePreferenceKey);
+    } else {
+      await preferences.setString(_localePreferenceKey, locale.languageCode);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,8 +100,8 @@ class _GameHubAppState extends State<GameHubApp> {
       home: RootScreen(
         themeMode: _themeMode,
         locale: _locale,
-        onThemeModeChanged: (mode) => setState(() => _themeMode = mode),
-        onLocaleChanged: (locale) => setState(() => _locale = locale),
+        onThemeModeChanged: _handleThemeModeChanged,
+        onLocaleChanged: _handleLocaleChanged,
       ),
     );
   }
@@ -280,18 +329,20 @@ class _SportMatchScreenState extends State<SportMatchScreen> {
   void _handleNewMatch() {
     if (_controller.hasActiveMatchProgress) {
       final palette = AppPalette.of(context);
+      final l10n = AppLocalizations.of(context);
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           backgroundColor: palette.surface,
-          title: const Text('New Match?'),
-          content: const Text(
-            'This will reset the current game score. Are you sure?',
-          ),
+          title: Text(l10n.t('match.newTitle')),
+          content: Text(l10n.t('match.newDescription')),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel', style: TextStyle(color: palette.textMuted)),
+              child: Text(
+                l10n.t('common.cancel'),
+                style: TextStyle(color: palette.textMuted),
+              ),
             ),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: palette.primary),
@@ -301,7 +352,7 @@ class _SportMatchScreenState extends State<SportMatchScreen> {
                   _controller.startNewMatch();
                 });
               },
-              child: const Text('Yes, Reset'),
+              child: Text(l10n.t('match.resetConfirm')),
             ),
           ],
         ),
@@ -525,19 +576,19 @@ class _SportMatchScreenState extends State<SportMatchScreen> {
                                 IconButton(
                                   icon: const Icon(Icons.apps),
                                   color: palette.primary,
-                                  tooltip: 'Activities',
+                                  tooltip: l10n.t('action.activities'),
                                   onPressed: _openActivitiesScreen,
                                 ),
                                 const SizedBox(height: 8),
                                 IconButton(
                                   icon: const Icon(Icons.refresh),
                                   color: palette.primary,
-                                  tooltip: 'New Match',
+                                  tooltip: l10n.t('action.newMatch'),
                                   onPressed: _handleNewMatch,
                                 ),
                                 const SizedBox(height: 12),
                                 Tooltip(
-                                  message: 'Account & Settings',
+                                  message: l10n.t('action.accountSettings'),
                                   child: InkWell(
                                     onTap: _openAccountScreen,
                                     customBorder: const CircleBorder(),
@@ -639,18 +690,18 @@ class _SportMatchScreenState extends State<SportMatchScreen> {
                       IconButton(
                         icon: const Icon(Icons.apps),
                         color: palette.text,
-                        tooltip: 'Activities',
+                        tooltip: l10n.t('action.activities'),
                         onPressed: _openActivitiesScreen,
                       ),
                       IconButton(
                         icon: const Icon(Icons.refresh),
                         color: palette.text,
-                        tooltip: 'New Match',
+                        tooltip: l10n.t('action.newMatch'),
                         onPressed: _handleNewMatch,
                       ),
                       const SizedBox(width: 4),
                       Tooltip(
-                        message: 'Account & Settings',
+                        message: l10n.t('action.accountSettings'),
                         child: GestureDetector(
                           onTap: _openAccountScreen,
                           child: _buildAccountAvatar(palette, size: 36),

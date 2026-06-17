@@ -80,6 +80,7 @@ class SportEvent {
     required this.scoreDelta,
     required this.totalScore,
     required this.createdAt,
+    this.actionId,
     this.statKey,
   });
 
@@ -89,6 +90,7 @@ class SportEvent {
   final int scoreDelta;
   final int totalScore;
   final DateTime createdAt;
+  final String? actionId;
   final String? statKey;
 }
 
@@ -1292,6 +1294,7 @@ class GameStateController extends ChangeNotifier {
 
   void applySportAction({
     required String label,
+    String? actionId,
     int scoreDelta = 0,
     String? statKey,
     int statDelta = 1,
@@ -1322,6 +1325,7 @@ class GameStateController extends ChangeNotifier {
         id: DateTime.now().microsecondsSinceEpoch.toString(),
         playerName: player.name,
         label: label,
+        actionId: actionId,
         scoreDelta: scoreDelta,
         totalScore: nextScore,
         statKey: statKey,
@@ -1748,6 +1752,7 @@ class GameStateController extends ChangeNotifier {
       'id': event.id,
       'playerName': event.playerName,
       'label': event.label,
+      'actionId': event.actionId,
       'scoreDelta': event.scoreDelta,
       'totalScore': event.totalScore,
       'statKey': event.statKey,
@@ -1761,6 +1766,7 @@ class GameStateController extends ChangeNotifier {
       id: value['id'] as String? ?? createdAt.toString(),
       playerName: value['playerName'] as String? ?? 'Player',
       label: value['label'] as String? ?? 'Event',
+      actionId: value['actionId'] as String?,
       scoreDelta: _intFromValue(value['scoreDelta']),
       totalScore: _intFromValue(value['totalScore']),
       statKey: value['statKey'] as String?,

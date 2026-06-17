@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/dart_hit.dart';
 import '../models/game_state_controller.dart';
 import '../models/game_settings.dart';
@@ -17,6 +18,7 @@ class HistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final palette = AppPalette.of(context);
+    final l10n = AppLocalizations.of(context);
     final history = controller.matchHistory;
     final playersWithTurns = controller.isDartsGame
         ? controller.players.where((player) => player.turns.isNotEmpty).toList()
@@ -29,7 +31,7 @@ class HistoryScreen extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(bottom: 16.0),
           child: Text(
-            'Match History',
+            l10n.t('history.title'),
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w900,
               color: palette.text,
@@ -49,7 +51,7 @@ class HistoryScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'No matches played yet',
+                        l10n.t('history.emptyTitle'),
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: palette.text,
                           fontWeight: FontWeight.bold,
@@ -57,7 +59,7 @@ class HistoryScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Play a match to see history and stats!',
+                        l10n.t('history.emptyDescription'),
                         style: TextStyle(
                           color: palette.textMuted,
                           fontSize: 13,
@@ -100,7 +102,7 @@ class HistoryScreen extends StatelessWidget {
                         title: Row(
                           children: [
                             Text(
-                              'Winner: ${match.winnerName}',
+                              '${l10n.t('history.winner')}: ${match.winnerName}',
                               style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.w900,
                                 color: palette.text,
@@ -187,13 +189,14 @@ class _CurrentThrowHistory extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Current Match Throws',
+            l10n.t('history.currentThrows'),
             style: theme.textTheme.titleMedium?.copyWith(
               color: palette.text,
               fontWeight: FontWeight.w900,
@@ -264,6 +267,7 @@ class _ThrowRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final score = turn.fold<int>(0, (sum, hit) => sum + hit.score);
     final labels = turn.map((hit) => hit.label).join(', ');
+    final l10n = AppLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -271,7 +275,7 @@ class _ThrowRow extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              'Turn ${turnIndex + 1}: $labels',
+              '${l10n.t('history.turn')} ${turnIndex + 1}: $labels',
               style: TextStyle(
                 color: palette.textMuted,
                 fontWeight: FontWeight.w700,

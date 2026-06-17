@@ -167,6 +167,7 @@ class _PlayScreenState extends State<PlayScreen> {
                             final action = sportActions[i];
                             controller.applySportAction(
                               label: action.label,
+                              actionId: action.id,
                               scoreDelta: action.scoreDelta,
                               statKey: action.statKey,
                               statDelta: action.statDelta,
@@ -174,7 +175,10 @@ class _PlayScreenState extends State<PlayScreen> {
                             );
                           },
                     icon: sportActions[i].icon,
-                    label: sportActions[i].label,
+                    label: l10n.sportAction(
+                      sportActions[i].id,
+                      sportActions[i].label,
+                    ),
                     filled: i == 0,
                   ),
                 ),
@@ -318,6 +322,10 @@ class _CurrentTurnHeader extends StatelessWidget {
     final hits = controller.currentTurn;
     final turnTotal = hits.fold(0, (total, hit) => total + hit.score);
     final isDarts = controller.isDartsGame;
+    final displayedRemaining =
+        isDarts && controller.settings.mode == GameMode.x01
+        ? (player.remaining - turnTotal).clamp(0, 999999)
+        : player.remaining;
     final checkoutHint = controller.checkoutHint;
     final checkoutTargets = _checkoutTargets(checkoutHint);
     final canScore = controller.canScoreCurrentTurn;
@@ -366,7 +374,7 @@ class _CurrentTurnHeader extends StatelessWidget {
                 ),
               ),
               Text(
-                '${player.remaining}',
+                '$displayedRemaining',
                 style: theme.textTheme.headlineSmall?.copyWith(
                   color: palette.primary,
                   fontWeight: FontWeight.w900,
@@ -420,53 +428,60 @@ class _CurrentTurnHeader extends StatelessWidget {
             ),
             const SizedBox(height: 10),
           ],
-          Row(
-            children: [
-              Text(
-                isDarts ? 'Turn total: $turnTotal' : 'Live leaderboard',
-                style: TextStyle(
-                  color: palette.text,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              if (!canScore && !controller.matchFinished) ...[
-                const SizedBox(width: 12),
-                Expanded(
+          SizedBox(
+            height: 24,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Align(
+                  alignment: Alignment.centerLeft,
                   child: Text(
-                    'Waiting for ${player.name}',
-                    textAlign: TextAlign.end,
+                    isDarts ? 'Turn total: $turnTotal' : 'Live leaderboard',
+                    style: TextStyle(
+                      color: palette.text,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                if (checkoutHint != null && canScore)
+                  Text(
+                    'Out: $checkoutHint',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: palette.textMuted,
                       fontWeight: FontWeight.w800,
+                      fontSize: 13,
                     ),
                   ),
-                ),
-              ] else if (controller.matchMessage != null) ...[
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    controller.matchMessage!,
-                    textAlign: TextAlign.end,
-                    style: TextStyle(
-                      color: palette.accent,
-                      fontWeight: FontWeight.w800,
+                if (!canScore && !controller.matchFinished)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      'Waiting for ${player.name}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: palette.textMuted,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  )
+                else if (controller.matchMessage != null)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      controller.matchMessage!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: palette.textMuted,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
-                ),
-              ] else if (checkoutHint != null) ...[
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Out: $checkoutHint',
-                    textAlign: TextAlign.end,
-                    style: TextStyle(
-                      color: palette.accent,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
               ],
-            ],
+            ),
           ),
         ],
       ),
@@ -500,6 +515,7 @@ class _GenericSportPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final player = controller.currentPlayer;
     final stats = player.stats.entries
         .where((entry) => entry.value > 0)
@@ -516,7 +532,7 @@ class _GenericSportPanel extends StatelessWidget {
           _Rule(palette: palette),
           const SizedBox(height: 16),
           Text(
-            game.name,
+            l10n.gameName(game.id, game.name),
             textAlign: TextAlign.center,
             style: theme.textTheme.titleLarge?.copyWith(
               color: palette.text,
@@ -525,7 +541,7 @@ class _GenericSportPanel extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '${player.name} - Score ${player.totalScored}',
+            '${player.name} - ${l10n.t('common.score')} ${player.totalScored}',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: palette.textMuted,
@@ -551,7 +567,7 @@ class _GenericSportPanel extends StatelessWidget {
             )
           else if (stats.isEmpty)
             Text(
-              game.subtitle,
+              l10n.gameSubtitle(game.id, game.subtitle),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: palette.textMuted,
@@ -566,7 +582,9 @@ class _GenericSportPanel extends StatelessWidget {
               children: [
                 for (final stat in stats)
                   Chip(
-                    label: Text('${_statLabel(stat.key)} ${stat.value}'),
+                    label: Text(
+                      '${l10n.sportStat(stat.key, _statLabel(stat.key))} ${stat.value}',
+                    ),
                     backgroundColor: palette.surfaceMuted,
                     side: BorderSide(color: palette.border),
                     labelStyle: TextStyle(
@@ -633,6 +651,10 @@ class _SportEventRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final time =
         '${event.createdAt.hour.toString().padLeft(2, '0')}:${event.createdAt.minute.toString().padLeft(2, '0')}';
+    final l10n = AppLocalizations.of(context);
+    final actionLabel = event.actionId == null
+        ? _legacyActionLabel(l10n, event.label)
+        : l10n.sportAction(event.actionId!, event.label);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -663,7 +685,7 @@ class _SportEventRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '$time - ${event.label}',
+                  '$time - $actionLabel',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -687,7 +709,7 @@ class _SportEventRow extends StatelessWidget {
                 ),
               ),
               Text(
-                'Total',
+                l10n.t('common.total'),
                 style: TextStyle(
                   color: palette.textMuted,
                   fontWeight: FontWeight.w800,
@@ -699,13 +721,18 @@ class _SportEventRow extends StatelessWidget {
           if (controller.canManageGroupMembers)
             IconButton(
               visualDensity: VisualDensity.compact,
-              tooltip: 'Remove event',
+              tooltip: l10n.t('action.removeEvent'),
               onPressed: () => controller.removeSportEvent(event.id),
               icon: Icon(Icons.close, color: palette.textMuted, size: 18),
             ),
         ],
       ),
     );
+  }
+
+  String _legacyActionLabel(AppLocalizations l10n, String label) {
+    final normalized = label.toLowerCase().replaceAll(' ', '-');
+    return l10n.sportAction(normalized, label);
   }
 }
 
@@ -722,6 +749,7 @@ class _QuickScoreboardPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -733,7 +761,7 @@ class _QuickScoreboardPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Players',
+            l10n.t('settings.playersLineup'),
             style: theme.textTheme.titleMedium?.copyWith(
               color: palette.text,
               fontWeight: FontWeight.w900,
@@ -770,8 +798,8 @@ class _QuickScoreboardPanel extends StatelessWidget {
                           ),
                           Text(
                             controller.isDartsGame
-                                ? 'Avg ${player.average.toStringAsFixed(1)} / Best ${player.highestTurnScore}'
-                                : _sportStatsSummary(player),
+                                ? '${l10n.t('scoreboard.avg')} ${player.average.toStringAsFixed(1)} / ${l10n.t('scoreboard.bestTurn')} ${player.highestTurnScore}'
+                                : _sportStatsSummary(player, l10n),
                             style: TextStyle(
                               color: palette.textMuted,
                               fontWeight: FontWeight.w600,
@@ -813,16 +841,18 @@ class _QuickScoreboardPanel extends StatelessWidget {
     );
   }
 
-  String _sportStatsSummary(PlayerScore player) {
+  String _sportStatsSummary(PlayerScore player, AppLocalizations l10n) {
     final stats = player.stats.entries
         .where((entry) => entry.value > 0)
         .take(2)
-        .map((entry) => '${entry.key}: ${entry.value}')
+        .map(
+          (entry) => '${l10n.sportStat(entry.key, entry.key)}: ${entry.value}',
+        )
         .join(' · ');
     if (stats.isEmpty) {
-      return 'Score ${player.totalScored}';
+      return '${l10n.t('common.score')} ${player.totalScored}';
     }
-    return 'Score ${player.totalScored} · $stats';
+    return '${l10n.t('common.score')} ${player.totalScored} · $stats';
   }
 }
 

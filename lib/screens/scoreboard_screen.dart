@@ -99,10 +99,10 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                             ),
                             subtitle: Text(
                               widget.controller.isDartsGame
-                                  ? '3-Dart Avg: ${player.average.toStringAsFixed(1)} | Throws: ${player.totalThrows}'
+                                  ? '${l10n.t('scoreboard.threeDartAvg')}: ${player.average.toStringAsFixed(1)} | ${l10n.t('scoreboard.throws')}: ${player.totalThrows}'
                                   : player.isRegisteredUser
-                                  ? 'Registered user'
-                                  : 'Local player',
+                                  ? l10n.t('scoreboard.registeredUser')
+                                  : l10n.t('scoreboard.localPlayer'),
                               style: TextStyle(
                                 color: palette.textMuted,
                                 fontWeight: FontWeight.w600,
@@ -160,7 +160,7 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                                   children: [
                                     Expanded(
                                       child: _MiniStat(
-                                        label: 'Wins',
+                                        label: l10n.sportStat('wins', 'Wins'),
                                         value: '${player.stats['wins'] ?? 0}',
                                         palette: palette,
                                       ),
@@ -188,14 +188,14 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                                     ),
                                     Expanded(
                                       child: _MiniStat(
-                                        label: 'Best Turn',
+                                        label: l10n.t('scoreboard.bestTurn'),
                                         value: '${player.highestTurnScore}',
                                         palette: palette,
                                       ),
                                     ),
                                     Expanded(
                                       child: _MiniStat(
-                                        label: 'Best No.',
+                                        label: l10n.t('scoreboard.bestNumber'),
                                         value: player.bestNumber == null
                                             ? '-'
                                             : '${player.bestNumber} (${player.bestNumberHits})',

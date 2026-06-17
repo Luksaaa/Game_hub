@@ -214,6 +214,21 @@ class _HubHeader extends StatelessWidget {
     final palette = AppPalette.of(context);
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    final platformBrightness = MediaQuery.platformBrightnessOf(context);
+    final resolvedThemeMode = themeMode == ThemeMode.system
+        ? platformBrightness == Brightness.dark
+              ? ThemeMode.dark
+              : ThemeMode.light
+        : themeMode;
+    final resolvedLocale = locale ?? Localizations.localeOf(context);
+    final selectedLocale =
+        AppLocalizations.supportedLocales.any(
+          (item) => item.languageCode == resolvedLocale.languageCode,
+        )
+        ? AppLocalizations.supportedLocales.firstWhere(
+            (item) => item.languageCode == resolvedLocale.languageCode,
+          )
+        : AppLocalizations.supportedLocales.first;
 
     return Row(
       children: [
@@ -259,10 +274,9 @@ class _HubHeader extends StatelessWidget {
         PopupMenuButton<Locale?>(
           tooltip: l10n.t('common.language'),
           icon: Icon(Icons.language, color: palette.text),
-          initialValue: locale,
+          initialValue: selectedLocale,
           onSelected: onLocaleChanged,
           itemBuilder: (context) => [
-            PopupMenuItem(value: null, child: Text(l10n.t('common.system'))),
             for (final supportedLocale in AppLocalizations.supportedLocales)
               PopupMenuItem(
                 value: supportedLocale,
@@ -273,13 +287,9 @@ class _HubHeader extends StatelessWidget {
         PopupMenuButton<ThemeMode>(
           tooltip: l10n.t('common.theme'),
           icon: Icon(Icons.brightness_6, color: palette.text),
-          initialValue: themeMode,
+          initialValue: resolvedThemeMode,
           onSelected: onThemeModeChanged,
           itemBuilder: (context) => [
-            PopupMenuItem(
-              value: ThemeMode.system,
-              child: Text(l10n.t('common.system')),
-            ),
             PopupMenuItem(
               value: ThemeMode.light,
               child: Text(l10n.t('common.light')),

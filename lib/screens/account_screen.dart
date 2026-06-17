@@ -310,6 +310,22 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Widget _buildSettingsSection(AppLocalizations l10n, AppPalette palette) {
+    final platformBrightness = MediaQuery.platformBrightnessOf(context);
+    final resolvedThemeMode = widget.themeMode == ThemeMode.system
+        ? platformBrightness == Brightness.dark
+              ? ThemeMode.dark
+              : ThemeMode.light
+        : widget.themeMode;
+    final resolvedLocale = widget.locale ?? Localizations.localeOf(context);
+    final selectedLocale =
+        AppLocalizations.supportedLocales.any(
+          (locale) => locale.languageCode == resolvedLocale.languageCode,
+        )
+        ? AppLocalizations.supportedLocales.firstWhere(
+            (locale) => locale.languageCode == resolvedLocale.languageCode,
+          )
+        : AppLocalizations.supportedLocales.first;
+
     return _Panel(
       palette: palette,
       child: Column(
@@ -323,10 +339,6 @@ class _AccountScreenState extends State<AccountScreen> {
           SegmentedButton<ThemeMode>(
             segments: [
               ButtonSegment(
-                value: ThemeMode.system,
-                label: Text(l10n.t('common.system')),
-              ),
-              ButtonSegment(
                 value: ThemeMode.light,
                 label: Text(l10n.t('common.light')),
               ),
@@ -335,7 +347,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 label: Text(l10n.t('common.dark')),
               ),
             ],
-            selected: {widget.themeMode},
+            selected: {resolvedThemeMode},
             onSelectionChanged: (selection) =>
                 widget.onThemeModeChanged(selection.first),
           ),
@@ -346,7 +358,7 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
           const SizedBox(height: 10),
           DropdownButtonFormField<Locale?>(
-            initialValue: widget.locale,
+            initialValue: selectedLocale,
             decoration: InputDecoration(
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -358,10 +370,6 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
             ),
             items: [
-              DropdownMenuItem<Locale?>(
-                value: null,
-                child: Text(l10n.t('common.system')),
-              ),
               for (final supportedLocale in AppLocalizations.supportedLocales)
                 DropdownMenuItem<Locale?>(
                   value: supportedLocale,
