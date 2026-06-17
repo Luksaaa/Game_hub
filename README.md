@@ -77,7 +77,21 @@ Za Google login i Realtime Database na webu dodaj ove Cloudflare Pages environme
 - `FIREBASE_WEB_PROJECT_ID`
 - `FIREBASE_WEB_AUTH_DOMAIN`
 - `FIREBASE_WEB_STORAGE_BUCKET`
+- `FIREBASE_WEB_MEASUREMENT_ID`
 - `GOOGLE_WEB_CLIENT_ID`
+
+Za trenutni Firebase Web app koristi:
+
+```text
+FIREBASE_WEB_API_KEY=AIzaSyCaiJWo5TR4M6c-42f-se7d-Q4Ve-NmE_s
+FIREBASE_WEB_APP_ID=1:452229037121:web:126c5f5d7e29541f3bdac0
+FIREBASE_WEB_MESSAGING_SENDER_ID=452229037121
+FIREBASE_WEB_PROJECT_ID=targetpoint-c57ff
+FIREBASE_WEB_AUTH_DOMAIN=targetpoint-c57ff.firebaseapp.com
+FIREBASE_WEB_STORAGE_BUCKET=targetpoint-c57ff.firebasestorage.app
+FIREBASE_WEB_MEASUREMENT_ID=G-GKVEQ3JL14
+GOOGLE_WEB_CLIENT_ID=452229037121-3ipplqudd4ta5prljf90d8q1a0he9iud.apps.googleusercontent.com
+```
 
 ## Provjere
 

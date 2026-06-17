@@ -448,7 +448,7 @@ class _AccountScreenState extends State<AccountScreen> {
           style: TextStyle(color: palette.text, fontWeight: FontWeight.w900),
         ),
         subtitle: Text(
-          'Version 1.0.0',
+          'Version 1.0.1',
           style: TextStyle(color: palette.textMuted),
         ),
       ),

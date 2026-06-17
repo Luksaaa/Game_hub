@@ -36,6 +36,9 @@ class AuthRepository {
   static const _webStorageBucket = String.fromEnvironment(
     'FIREBASE_WEB_STORAGE_BUCKET',
   );
+  static const _webMeasurementId = String.fromEnvironment(
+    'FIREBASE_WEB_MEASUREMENT_ID',
+  );
   static const _googleWebClientId = String.fromEnvironment(
     'GOOGLE_WEB_CLIENT_ID',
   );
@@ -99,6 +102,7 @@ class AuthRepository {
       authDomain: _webAuthDomain,
       databaseURL: databaseUrl,
       storageBucket: _webStorageBucket,
+      measurementId: _webMeasurementId,
     );
   }
 
