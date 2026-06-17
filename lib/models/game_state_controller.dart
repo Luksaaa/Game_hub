@@ -1785,11 +1785,18 @@ class GameStateController extends ChangeNotifier {
     final members = <String, Object?>{
       for (final entry in _groupMembers.entries) entry.key: entry.value,
     };
+    final fallbackJoinedAt = _lastLocalSyncAt == 0
+        ? DateTime.now().millisecondsSinceEpoch
+        : _lastLocalSyncAt;
     if (!_currentUser.isGuest) {
+      final existing = Map<String, Object?>.from(
+        (members[_currentUser.id] as Map?) ?? const {},
+      );
       members[_currentUser.id] = {
         'role': _currentUser.id == _liveHostUserId ? 'owner' : 'participant',
         'displayName': _currentUser.displayName,
         'photoUrl': _currentUser.photoUrl,
+        'joinedAt': existing['joinedAt'] ?? fallbackJoinedAt,
       };
     }
     for (final player in _players) {
@@ -1797,9 +1804,14 @@ class GameStateController extends ChangeNotifier {
       if (userId == null || userId.isEmpty) {
         continue;
       }
+      final existing = Map<String, Object?>.from(
+        (members[userId] as Map?) ?? const {},
+      );
       members[userId] = {
         'role': userId == _liveHostUserId ? 'owner' : 'participant',
         'displayName': player.name,
+        'photoUrl': existing['photoUrl'],
+        'joinedAt': existing['joinedAt'] ?? fallbackJoinedAt,
       };
     }
     return members;
