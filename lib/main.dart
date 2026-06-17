@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'l10n/app_localizations.dart';
@@ -44,6 +45,7 @@ class _TargetPointAppState extends State<TargetPointApp> {
       ],
       theme: _buildTheme(Brightness.light),
       darkTheme: _buildTheme(Brightness.dark),
+      scrollBehavior: const _TargetPointScrollBehavior(),
       home: RootScreen(
         themeMode: _themeMode,
         locale: _locale,
@@ -138,6 +140,18 @@ class _TargetPointAppState extends State<TargetPointApp> {
       useMaterial3: true,
     );
   }
+}
+
+class _TargetPointScrollBehavior extends MaterialScrollBehavior {
+  const _TargetPointScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.stylus,
+    PointerDeviceKind.trackpad,
+  };
 }
 
 class RootScreen extends StatefulWidget {
@@ -341,24 +355,6 @@ class _SportMatchScreenState extends State<SportMatchScreen> {
     );
   }
 
-  Widget _buildActiveScreen(bool isWide) {
-    return switch (_controller.activeTabIndex) {
-      0 => PlayScreen(
-        controller: _controller,
-        isWide: isWide,
-        game: widget.game,
-      ),
-      1 => ScoreboardScreen(controller: _controller),
-      2 => SettingsScreen(controller: _controller),
-      3 => HistoryScreen(controller: _controller),
-      _ => PlayScreen(
-        controller: _controller,
-        isWide: isWide,
-        game: widget.game,
-      ),
-    };
-  }
-
   List<Widget> _buildMobilePages() {
     return [
       ResponsiveContent(
@@ -383,6 +379,35 @@ class _SportMatchScreenState extends State<SportMatchScreen> {
       ResponsiveContent(
         maxWidth: 980,
         padding: const EdgeInsets.all(16),
+        child: HistoryScreen(controller: _controller),
+      ),
+    ];
+  }
+
+  List<Widget> _buildWidePages() {
+    return [
+      ResponsiveContent(
+        maxWidth: 1320,
+        padding: const EdgeInsets.all(24),
+        child: PlayScreen(
+          controller: _controller,
+          isWide: true,
+          game: widget.game,
+        ),
+      ),
+      ResponsiveContent(
+        maxWidth: 1320,
+        padding: const EdgeInsets.all(24),
+        child: ScoreboardScreen(controller: _controller),
+      ),
+      ResponsiveContent(
+        maxWidth: 1320,
+        padding: const EdgeInsets.all(24),
+        child: SettingsScreen(controller: _controller),
+      ),
+      ResponsiveContent(
+        maxWidth: 1320,
+        padding: const EdgeInsets.all(24),
         child: HistoryScreen(controller: _controller),
       ),
     ];
@@ -444,7 +469,7 @@ class _SportMatchScreenState extends State<SportMatchScreen> {
                         child: NavigationRail(
                           backgroundColor: palette.surface,
                           selectedIndex: _controller.activeTabIndex,
-                          onDestinationSelected: _controller.changeTab,
+                          onDestinationSelected: _goToTab,
                           labelType: NavigationRailLabelType.all,
                           leading: Column(
                             children: [
@@ -541,10 +566,10 @@ class _SportMatchScreenState extends State<SportMatchScreen> {
                         ),
                       ),
                       Expanded(
-                        child: ResponsiveContent(
-                          maxWidth: 1320,
-                          padding: const EdgeInsets.all(24),
-                          child: _buildActiveScreen(true),
+                        child: PageView(
+                          controller: _pageController,
+                          onPageChanged: _controller.changeTab,
+                          children: _buildWidePages(),
                         ),
                       ),
                     ],
