@@ -8,7 +8,7 @@
 PRODUCT_NAME = Game hub
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.targetpoint.targetPoint
+PRODUCT_BUNDLE_IDENTIFIER = com.luksa.gamehub
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.targetpoint. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 com.luksa. All rights reserved.

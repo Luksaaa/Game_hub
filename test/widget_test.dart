@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:target_point/main.dart';
-import 'package:target_point/l10n/app_localizations.dart';
-import 'package:target_point/models/dart_hit.dart';
-import 'package:target_point/models/game_state_controller.dart';
-import 'package:target_point/models/player_score.dart';
-import 'package:target_point/models/sport_game.dart';
-import 'package:target_point/widgets/dartboard.dart';
+import 'package:game_hub/main.dart';
+import 'package:game_hub/l10n/app_localizations.dart';
+import 'package:game_hub/models/dart_hit.dart';
+import 'package:game_hub/models/game_state_controller.dart';
+import 'package:game_hub/models/player_score.dart';
+import 'package:game_hub/models/sport_game.dart';
+import 'package:game_hub/widgets/dartboard.dart';
 
 void main() {
   Future<void> pumpApp(
