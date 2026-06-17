@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../models/game_state_controller.dart';
@@ -19,7 +20,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final TextEditingController _playerNameController = TextEditingController();
   final TextEditingController _sessionNameController = TextEditingController();
   final TextEditingController _joinSessionController = TextEditingController();
-  final TextEditingController _participantController = TextEditingController();
   int _newPlayerColor = 0xFF0F8B6B; // Default emerald
 
   final List<int> _colorOptions = const [
@@ -36,7 +36,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _playerNameController.dispose();
     _sessionNameController.dispose();
     _joinSessionController.dispose();
-    _participantController.dispose();
     super.dispose();
   }
 
@@ -231,22 +230,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
           ),
-          _SessionSyncPanel(
+          _GroupPanel(
             controller: widget.controller,
             sessionNameController: _sessionNameController,
             joinSessionController: _joinSessionController,
-            participantController: _participantController,
             palette: palette,
           ),
           const SizedBox(height: 16),
 
           if (widget.controller.isDartsGame) ...[
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: palette.surface,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: palette.border),
+                border: Border(
+                  top: BorderSide(
+                    color: palette.border.withValues(alpha: 0.45),
+                  ),
+                  bottom: BorderSide(
+                    color: palette.border.withValues(alpha: 0.45),
+                  ),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -373,9 +376,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-              color: palette.surface,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: palette.border),
+              border: Border(
+                top: BorderSide(color: palette.border.withValues(alpha: 0.45)),
+              ),
             ),
             child: SizedBox(
               height: 300,
@@ -395,8 +398,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     color: palette.surfaceMuted,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      side: BorderSide(color: palette.border),
+                      borderRadius: BorderRadius.circular(18),
                     ),
                     child: ListTile(
                       dense: true,
@@ -469,19 +471,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-class _SessionSyncPanel extends StatelessWidget {
-  const _SessionSyncPanel({
+class _GroupPanel extends StatelessWidget {
+  const _GroupPanel({
     required this.controller,
     required this.sessionNameController,
     required this.joinSessionController,
-    required this.participantController,
     required this.palette,
   });
 
   final GameStateController controller;
   final TextEditingController sessionNameController;
   final TextEditingController joinSessionController;
-  final TextEditingController participantController;
   final AppPalette palette;
 
   @override
@@ -490,13 +490,8 @@ class _SessionSyncPanel extends StatelessWidget {
     final isGuest = controller.currentUser.isGuest;
     final activeSessionId = controller.activeSessionId;
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: palette.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: palette.border),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -548,7 +543,7 @@ class _SessionSyncPanel extends StatelessWidget {
             Text(
               activeSessionId == null
                   ? 'Create or join a group to sync this scoreboard.'
-                  : '${controller.activeSessionName}\nCode: $activeSessionId',
+                  : controller.activeSessionName,
               style: TextStyle(
                 color: palette.textMuted,
                 fontWeight: FontWeight.w700,
@@ -563,21 +558,64 @@ class _SessionSyncPanel extends StatelessWidget {
             ],
             if (activeSessionId != null) ...[
               const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: QrImageView(
+                      data: activeSessionId,
+                      version: QrVersions.auto,
+                      size: 112,
+                      backgroundColor: Colors.white,
+                    ),
                   ),
-                  child: QrImageView(
-                    data: activeSessionId,
-                    version: QrVersions.auto,
-                    size: 118,
-                    backgroundColor: Colors.white,
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Group code',
+                          style: TextStyle(
+                            color: palette.textMuted,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        SelectableText(
+                          activeSessionId,
+                          style: TextStyle(
+                            color: palette.text,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 24,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            Clipboard.setData(
+                              ClipboardData(text: activeSessionId),
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Group code copied'),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.copy, size: 18),
+                          label: const Text('Copy code'),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
             const SizedBox(height: 12),
@@ -608,18 +646,6 @@ class _SessionSyncPanel extends StatelessWidget {
                   ),
                   icon: const Icon(Icons.login, size: 18),
                   label: const Text('Join'),
-                ),
-                OutlinedButton.icon(
-                  onPressed: () => _showTextActionDialog(
-                    context: context,
-                    title: 'Add participant',
-                    hintText: 'Player name or Firebase user ID',
-                    controller: participantController,
-                    actionLabel: 'Add',
-                    onSubmit: controller.addParticipantToSession,
-                  ),
-                  icon: const Icon(Icons.person_add, size: 18),
-                  label: const Text('Participant'),
                 ),
               ],
             ),

@@ -61,17 +61,17 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                     final player = players[index];
                     final isExpanded = _expandedPlayers[player.name] ?? false;
 
-                    return Card(
-                      color: palette.surface,
-                      elevation: 0,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        side: BorderSide(
-                          color: player.isWinner
-                              ? palette.primary
-                              : palette.border,
-                          width: player.isWinner ? 2 : 1,
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: player.isWinner
+                                ? palette.primary
+                                : palette.border.withValues(alpha: 0.45),
+                            width: player.isWinner ? 2 : 1,
+                          ),
                         ),
                       ),
                       child: Column(

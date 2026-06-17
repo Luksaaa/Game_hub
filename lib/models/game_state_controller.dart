@@ -54,6 +54,13 @@ class GameStateController extends ChangeNotifier {
   Future<void> _initializeServices() async {
     await _authRepository.initialize();
     _cloudFeaturesAvailable = _authRepository.firebaseReady;
+    final savedSession = _authRepository.currentSession();
+    if (savedSession != null) {
+      _currentUser = savedSession;
+      _accountMessage = 'Signed in as ${_currentUser.displayName}.';
+      _ensureCurrentUserParticipant();
+      await _activateRealtimeMatchForCurrentUser();
+    }
     notifyListeners();
   }
 
@@ -301,29 +308,12 @@ class GameStateController extends ChangeNotifier {
       return;
     }
 
-    final matchId = _buildPersonalGroupCode();
-    _liveMatchId = matchId;
-    _activeSessionName = 'My $gameName group';
-    _isLiveHost = true;
-    _liveHostUserId = _currentUser.id;
-    _liveMatchMessage = 'Realtime sync is active for this group.';
-
-    final payload = await _authRepository.fetchSession(matchId);
-    _subscribeToLiveMatch(matchId);
-    if (payload == null) {
-      await _authRepository.addUserSession(
-        userId: _currentUser.id,
-        sessionId: matchId,
-        sportId: gameId,
-        sessionName: _activeSessionName,
-        role: 'owner',
-      );
-      await _syncLiveMatch();
-      return;
-    }
-    _applyLivePayload(payload);
-    _ensureCurrentUserParticipant();
-    await _syncLiveMatch();
+    _liveMatchId = null;
+    _activeSessionName = '';
+    _isLiveHost = false;
+    _liveHostUserId = null;
+    _liveMatchMessage = 'Create or join a group to sync this match.';
+    notifyListeners();
   }
 
   Future<void> createCloudSession(String sessionName) async {
@@ -461,6 +451,7 @@ class GameStateController extends ChangeNotifier {
     try {
       final settingsValue = payload['settings'];
       final playersValue = payload['players'];
+      final membersValue = payload['members'];
       final turnValue = payload['currentTurn'];
       _liveMatchId = payload['id'] as String? ?? _liveMatchId;
       _activeSessionName =
@@ -478,6 +469,7 @@ class GameStateController extends ChangeNotifier {
       if (_players.isEmpty) {
         _players = _profiles.map(_playerFromProfile).toList();
       }
+      _mergeMembersIntoPlayers(membersValue);
       _currentTurn
         ..clear()
         ..addAll(
@@ -991,6 +983,47 @@ class GameStateController extends ChangeNotifier {
     );
   }
 
+  void _mergeMembersIntoPlayers(Object? membersValue) {
+    if (membersValue is! Map) {
+      return;
+    }
+
+    final members = Map<String, dynamic>.from(membersValue);
+    for (final entry in members.entries) {
+      final userId = entry.key;
+      final value = entry.value;
+      if (value is! Map || userId.isEmpty) {
+        continue;
+      }
+
+      final member = Map<String, dynamic>.from(value);
+      final displayName = member['displayName'] as String? ?? 'Player';
+      final existingIndex = _players.indexWhere(
+        (player) => player.userId == userId,
+      );
+      if (existingIndex != -1) {
+        _players[existingIndex] = _players[existingIndex].copyWith(
+          name: displayName,
+        );
+        continue;
+      }
+
+      _players.add(
+        PlayerScore(
+          userId: userId,
+          name: displayName,
+          avatarColorValue: _nextAvatarColor(),
+          remaining: _settings.mode == GameMode.x01 && isDartsGame
+              ? _settings.startingScore
+              : 0,
+          totalScored: 0,
+          turns: const [],
+          isWinner: false,
+        ),
+      );
+    }
+  }
+
   Map<String, Object?> _hitToMap(DartHit hit) {
     return {
       'label': hit.label,
@@ -1076,14 +1109,6 @@ class GameStateController extends ChangeNotifier {
     return _randomGroupCode();
   }
 
-  String _buildPersonalGroupCode() {
-    final hash = _currentUser.id.codeUnits.fold<int>(
-      0,
-      (value, unit) => (value * 31 + unit) & 0x7fffffff,
-    );
-    return '${_lettersFromNumber(hash)}${(hash % 1000).toString().padLeft(3, '0')}';
-  }
-
   String _randomGroupCode() {
     const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
     final random = Random.secure();
@@ -1093,16 +1118,6 @@ class GameStateController extends ChangeNotifier {
     ).join();
     final codeNumbers = List.generate(3, (_) => random.nextInt(10)).join();
     return '$codeLetters$codeNumbers';
-  }
-
-  String _lettersFromNumber(int number) {
-    const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-    var value = number;
-    return List.generate(3, (_) {
-      final letter = letters[value % letters.length];
-      value = value ~/ letters.length;
-      return letter;
-    }).join();
   }
 
   Map<String, Object?> _membersToMap() {

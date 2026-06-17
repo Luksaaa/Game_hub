@@ -61,9 +61,9 @@ class _TargetPointAppState extends State<TargetPointApp> {
     final isDark = brightness == Brightness.dark;
     final palette = isDark
         ? const AppPalette(
-            background: Color(0xFF0F1115),
-            surface: Color(0xFF171A20),
-            surfaceMuted: Color(0xFF20242C),
+            background: Color(0xFF0B0D12),
+            surface: Color(0xFF151922),
+            surfaceMuted: Color(0xFF202634),
             primary: Color(0xFF4F8EF7),
             primarySoft: Color(0xFF1D2E47),
             accent: Color(0xFFE3A72F),
@@ -74,9 +74,9 @@ class _TargetPointAppState extends State<TargetPointApp> {
             dartboardLight: Color(0xFFF2E8CF),
           )
         : const AppPalette(
-            background: Color(0xFFF6F7F9),
+            background: Color(0xFFF7F8FB),
             surface: Color(0xFFFFFFFF),
-            surfaceMuted: Color(0xFFEDEFF3),
+            surfaceMuted: Color(0xFFEFF3F8),
             primary: Color(0xFF1D5FAD),
             primarySoft: Color(0xFFDCE8F7),
             accent: Color(0xFFB7791F),
@@ -102,24 +102,25 @@ class _TargetPointAppState extends State<TargetPointApp> {
       cardTheme: CardThemeData(
         color: palette.surface,
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: BorderSide(color: palette.border),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: palette.primary,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: palette.text,
-          side: BorderSide(color: palette.border),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          side: BorderSide(color: palette.border.withValues(alpha: 0.55)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
@@ -127,15 +128,15 @@ class _TargetPointAppState extends State<TargetPointApp> {
         filled: true,
         fillColor: palette.surface,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: palette.border),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: palette.border),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: palette.primary, width: 1.5),
         ),
       ),

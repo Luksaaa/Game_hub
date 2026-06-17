@@ -102,6 +102,26 @@ class AuthRepository {
     );
   }
 
+  UserSession? currentSession() {
+    if (!_firebaseReady) {
+      return null;
+    }
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return null;
+    }
+
+    return UserSession(
+      id: user.uid,
+      displayName: user.displayName ?? 'Player',
+      email: user.email,
+      avatarColorValue: 0xFF0F8B6B,
+      isGuest: false,
+      photoUrl: user.photoURL,
+    );
+  }
+
   Future<AuthResult> signInWithGoogle() async {
     if (!_firebaseReady) {
       return const AuthResult.failure(

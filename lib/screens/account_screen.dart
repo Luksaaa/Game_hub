@@ -670,9 +670,9 @@ class _Panel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: palette.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: palette.border),
+        border: Border(
+          bottom: BorderSide(color: palette.border.withValues(alpha: 0.45)),
+        ),
       ),
       child: child,
     );
