@@ -384,7 +384,7 @@ class _GenericSportPanel extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '${player.name} · Score ${player.totalScored}',
+            '${player.name} - Score ${player.totalScored}',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: palette.textMuted,
@@ -395,22 +395,18 @@ class _GenericSportPanel extends StatelessWidget {
           _Rule(palette: palette),
           const SizedBox(height: 18),
           if (events.isNotEmpty)
-            SizedBox(
-              height: 112,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: events.length,
-                separatorBuilder: (context, index) => const SizedBox(width: 10),
-                itemBuilder: (context, index) {
-                  final event = events[index];
-                  return _SportEventCard(
-                    event: event,
+            Column(
+              children: [
+                for (var index = 0; index < events.length; index++) ...[
+                  _SportEventRow(
+                    event: events[index],
                     game: game,
                     controller: controller,
                     palette: palette,
-                  );
-                },
-              ),
+                  ),
+                  if (index != events.length - 1) _Rule(palette: palette),
+                ],
+              ],
             )
           else if (stats.isEmpty)
             Text(
@@ -479,8 +475,8 @@ class _Rule extends StatelessWidget {
   }
 }
 
-class _SportEventCard extends StatelessWidget {
-  const _SportEventCard({
+class _SportEventRow extends StatelessWidget {
+  const _SportEventRow({
     required this.event,
     required this.game,
     required this.controller,
@@ -497,25 +493,22 @@ class _SportEventCard extends StatelessWidget {
     final time =
         '${event.createdAt.hour.toString().padLeft(2, '0')}:${event.createdAt.minute.toString().padLeft(2, '0')}';
 
-    return Container(
-      width: 210,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: palette.surfaceMuted,
-        borderRadius: BorderRadius.circular(14),
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
         children: [
-          CircleAvatar(
-            backgroundColor: game.color.withValues(alpha: 0.2),
-            foregroundColor: game.color,
-            radius: 18,
-            child: Icon(game.icon, size: 20),
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: game.color.withValues(alpha: 0.18),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(game.icon, color: game.color, size: 22),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -529,27 +522,38 @@ class _SportEventCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  event.label,
+                  '$time - ${event.label}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: palette.textMuted,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '$time · Total ${event.totalScore}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: palette.primary,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
             ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '${event.totalScore}',
+                style: TextStyle(
+                  color: palette.primary,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                ),
+              ),
+              Text(
+                'Total',
+                style: TextStyle(
+                  color: palette.textMuted,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 11,
+                ),
+              ),
+            ],
           ),
           if (controller.canManageGroupMembers)
             IconButton(
