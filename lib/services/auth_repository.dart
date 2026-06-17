@@ -36,6 +36,9 @@ class AuthRepository {
   static const _webStorageBucket = String.fromEnvironment(
     'FIREBASE_WEB_STORAGE_BUCKET',
   );
+  static const _googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+  );
 
   bool _firebaseReady = false;
   bool _googleReady = false;
@@ -67,7 +70,11 @@ class AuthRepository {
     }
 
     try {
-      await GoogleSignIn.instance.initialize();
+      await GoogleSignIn.instance.initialize(
+        clientId: kIsWeb && _googleWebClientId.isNotEmpty
+            ? _googleWebClientId
+            : null,
+      );
       _googleReady = true;
     } catch (error) {
       debugPrint('Google Sign-In is not configured yet: $error');

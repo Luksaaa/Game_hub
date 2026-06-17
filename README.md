@@ -65,6 +65,7 @@ Za Google login i Realtime Database na webu dodaj ove Cloudflare Pages environme
 - `FIREBASE_WEB_PROJECT_ID`
 - `FIREBASE_WEB_AUTH_DOMAIN`
 - `FIREBASE_WEB_STORAGE_BUCKET`
+- `GOOGLE_WEB_CLIENT_ID`
 
 ## Provjere
 
