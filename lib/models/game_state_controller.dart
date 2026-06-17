@@ -422,6 +422,33 @@ class GameStateController extends ChangeNotifier {
       return;
     }
 
+    final lastSession = await _authRepository.fetchLatestUserSessionForSport(
+      userId: _currentUser.id,
+      sportId: gameId,
+    );
+    final lastSessionId = lastSession?['sessionId'] as String?;
+    if (lastSessionId != null && lastSessionId.isNotEmpty) {
+      final payload = await _authRepository.fetchSession(lastSessionId);
+      if (payload != null) {
+        await _liveMatchSubscription?.cancel();
+        _liveMatchId = lastSessionId;
+        final sessionParts = lastSessionId.split('_');
+        _activeGroupCode =
+            payload['groupCode'] as String? ??
+            (sessionParts.isEmpty ? lastSessionId : sessionParts.last);
+        _activeSessionName =
+            payload['sessionName'] as String? ??
+            lastSession?['sessionName'] as String? ??
+            '$gameName group';
+        _applyLivePayload(payload);
+        _ensureCurrentUserParticipant();
+        _subscribeToLiveMatch(lastSessionId);
+        _liveMatchMessage = 'Group loaded.';
+        notifyListeners();
+        return;
+      }
+    }
+
     _liveMatchId = null;
     _activeGroupCode = null;
     _activeSessionName = '';

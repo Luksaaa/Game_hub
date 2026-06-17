@@ -293,6 +293,35 @@ class AuthRepository {
     });
   }
 
+  Future<Map<String, dynamic>?> fetchLatestUserSessionForSport({
+    required String userId,
+    required String sportId,
+  }) async {
+    if (!_firebaseReady || userId == 'guest') {
+      return null;
+    }
+
+    final snapshot = await _db.child('userSessions/$userId').get();
+    final value = snapshot.value;
+    if (value is! Map) {
+      return null;
+    }
+
+    final sessions =
+        Map<String, dynamic>.from(value).values
+            .whereType<Map>()
+            .map((entry) => Map<String, dynamic>.from(entry))
+            .where((entry) => entry['sportId'] == sportId)
+            .toList()
+          ..sort((a, b) {
+            final aUpdated = _intFromValue(a['updatedAt']);
+            final bUpdated = _intFromValue(b['updatedAt']);
+            return bUpdated.compareTo(aUpdated);
+          });
+
+    return sessions.isEmpty ? null : sessions.first;
+  }
+
   Future<void> reserveSportGroupName({
     required String sportId,
     required String normalizedName,
@@ -364,4 +393,17 @@ class AuthRepository {
     app: Firebase.app(),
     databaseURL: databaseUrl,
   ).ref();
+
+  int _intFromValue(Object? value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    if (value is String) {
+      return int.tryParse(value) ?? 0;
+    }
+    return 0;
+  }
 }
