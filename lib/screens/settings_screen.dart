@@ -248,6 +248,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final palette = AppPalette.of(context);
     final settings = widget.controller.settings;
     final players = widget.controller.players;
+    final showMatchControls =
+        widget.controller.currentUser.isGuest ||
+        widget.controller.activeSessionId != null;
 
     return SingleChildScrollView(
       child: Column(
@@ -271,240 +274,250 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 16),
 
-          if (widget.controller.isDartsGame) ...[
+          if (showMatchControls) ...[
+            if (widget.controller.isDartsGame) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: palette.border.withValues(alpha: 0.45),
+                    ),
+                    bottom: BorderSide(
+                      color: palette.border.withValues(alpha: 0.45),
+                    ),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _SectionTitle(
+                      title: 'Game Mode',
+                      icon: Icons.videogame_asset,
+                      palette: palette,
+                    ),
+                    SegmentedButton<GameMode>(
+                      segments: const [
+                        ButtonSegment(value: GameMode.x01, label: Text('X01')),
+                        ButtonSegment(
+                          value: GameMode.countUp,
+                          label: Text('Count Up'),
+                        ),
+                      ],
+                      selected: {settings.mode},
+                      onSelectionChanged: (selection) {
+                        _confirmSettingsChange(() {
+                          widget.controller.updateSettings(
+                            mode: selection.first,
+                          );
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    if (settings.mode == GameMode.x01) ...[
+                      _SectionTitle(
+                        title: 'Starting Score',
+                        icon: Icons.score,
+                        palette: palette,
+                      ),
+                      Wrap(
+                        spacing: 8,
+                        children: widget.controller.scoreOptions.map((score) {
+                          final isSelected = settings.startingScore == score;
+                          return ChoiceChip(
+                            label: Text('$score'),
+                            selected: isSelected,
+                            selectedColor: palette.primarySoft,
+                            labelStyle: TextStyle(
+                              color: isSelected
+                                  ? palette.primary
+                                  : palette.text,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            onSelected: (_) {
+                              _confirmSettingsChange(() {
+                                widget.controller.updateSettings(
+                                  startingScore: score,
+                                );
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                      _SectionTitle(
+                        title: 'Finish Rule',
+                        icon: Icons.flag,
+                        palette: palette,
+                      ),
+                      SegmentedButton<OutRule>(
+                        segments: const [
+                          ButtonSegment(
+                            value: OutRule.singleOut,
+                            label: Text('Single'),
+                          ),
+                          ButtonSegment(
+                            value: OutRule.doubleOut,
+                            label: Text('Double'),
+                          ),
+                          ButtonSegment(
+                            value: OutRule.masterOut,
+                            label: Text('Master'),
+                          ),
+                        ],
+                        selected: {settings.outRule},
+                        onSelectionChanged: (selection) {
+                          _confirmSettingsChange(() {
+                            widget.controller.updateSettings(
+                              outRule: selection.first,
+                            );
+                          });
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+
+            // Players List & Management
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              runSpacing: 10,
+              children: [
+                Text(
+                  'Players Lineup',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: palette.text,
+                  ),
+                ),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: palette.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: _showAddPlayerDialog,
+                  icon: const Icon(Icons.person_add, size: 18),
+                  label: const Text(
+                    'Add Player',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
                 border: Border(
                   top: BorderSide(
                     color: palette.border.withValues(alpha: 0.45),
                   ),
-                  bottom: BorderSide(
-                    color: palette.border.withValues(alpha: 0.45),
-                  ),
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _SectionTitle(
-                    title: 'Game Mode',
-                    icon: Icons.videogame_asset,
-                    palette: palette,
-                  ),
-                  SegmentedButton<GameMode>(
-                    segments: const [
-                      ButtonSegment(value: GameMode.x01, label: Text('X01')),
-                      ButtonSegment(
-                        value: GameMode.countUp,
-                        label: Text('Count Up'),
+              child: SizedBox(
+                height: 300,
+                child: ReorderableListView.builder(
+                  shrinkWrap: true,
+                  itemCount: players.length,
+                  onReorder: widget.controller.reorderPlayers,
+                  itemBuilder: (context, index) {
+                    final player = players[index];
+                    final isOwner = widget.controller.isGroupOwner(player);
+                    final canDelete =
+                        player.userId == null ||
+                        (widget.controller.canManageGroupMembers && !isOwner);
+
+                    return Card(
+                      key: ValueKey(player.name),
+                      elevation: 0,
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
                       ),
-                    ],
-                    selected: {settings.mode},
-                    onSelectionChanged: (selection) {
-                      _confirmSettingsChange(() {
-                        widget.controller.updateSettings(mode: selection.first);
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  if (settings.mode == GameMode.x01) ...[
-                    _SectionTitle(
-                      title: 'Starting Score',
-                      icon: Icons.score,
-                      palette: palette,
-                    ),
-                    Wrap(
-                      spacing: 8,
-                      children: widget.controller.scoreOptions.map((score) {
-                        final isSelected = settings.startingScore == score;
-                        return ChoiceChip(
-                          label: Text('$score'),
-                          selected: isSelected,
-                          selectedColor: palette.primarySoft,
-                          labelStyle: TextStyle(
-                            color: isSelected ? palette.primary : palette.text,
-                            fontWeight: FontWeight.bold,
+                      color: palette.surfaceMuted,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: ListTile(
+                        dense: true,
+                        leading: PlayerAvatar(
+                          name: player.name,
+                          avatarColorValue: player.avatarColorValue,
+                          photoUrl: player.photoUrl,
+                          radius: 16,
+                        ),
+                        title: Text(
+                          player.name,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            color: palette.text,
                           ),
-                          onSelected: (_) {
-                            _confirmSettingsChange(() {
-                              widget.controller.updateSettings(
-                                startingScore: score,
-                              );
-                            });
-                          },
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 16),
-                    _SectionTitle(
-                      title: 'Finish Rule',
-                      icon: Icons.flag,
-                      palette: palette,
-                    ),
-                    SegmentedButton<OutRule>(
-                      segments: const [
-                        ButtonSegment(
-                          value: OutRule.singleOut,
-                          label: Text('Single'),
                         ),
-                        ButtonSegment(
-                          value: OutRule.doubleOut,
-                          label: Text('Double'),
+                        subtitle: Text(
+                          isOwner ? 'Group admin' : 'Tap to edit stats',
+                          style: TextStyle(
+                            color: isOwner
+                                ? palette.primary
+                                : palette.textMuted,
+                            fontSize: 11,
+                            fontWeight: isOwner
+                                ? FontWeight.w900
+                                : FontWeight.w600,
+                          ),
                         ),
-                        ButtonSegment(
-                          value: OutRule.masterOut,
-                          label: Text('Master'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                Icons.delete_outline,
+                                color: palette.textMuted,
+                              ),
+                              onPressed: players.length > 1 && canDelete
+                                  ? () => _confirmRemovePlayer(player)
+                                  : null,
+                            ),
+                            ReorderableDragStartListener(
+                              index: index,
+                              child: const Icon(
+                                Icons.drag_handle,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                      selected: {settings.outRule},
-                      onSelectionChanged: (selection) {
-                        _confirmSettingsChange(() {
-                          widget.controller.updateSettings(
-                            outRule: selection.first,
+                        onTap: () {
+                          // Open profile dialog to view details
+                          final pIndex = widget.controller.profiles.indexWhere(
+                            (p) => p.name == player.name,
                           );
-                        });
-                      },
-                    ),
-                  ],
-                ],
+                          if (pIndex != -1) {
+                            showDialog(
+                              context: context,
+                              builder: (context) => ProfileDialog(
+                                profile: widget.controller.profiles[pIndex],
+                                controller: widget.controller,
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
           ],
-
-          // Players List & Management
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 12,
-            runSpacing: 10,
-            children: [
-              Text(
-                'Players Lineup',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: palette.text,
-                ),
-              ),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: palette.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                onPressed: _showAddPlayerDialog,
-                icon: const Icon(Icons.person_add, size: 18),
-                label: const Text(
-                  'Add Player',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(color: palette.border.withValues(alpha: 0.45)),
-              ),
-            ),
-            child: SizedBox(
-              height: 300,
-              child: ReorderableListView.builder(
-                shrinkWrap: true,
-                itemCount: players.length,
-                onReorder: widget.controller.reorderPlayers,
-                itemBuilder: (context, index) {
-                  final player = players[index];
-                  final isOwner = widget.controller.isGroupOwner(player);
-                  final canDelete =
-                      player.userId == null ||
-                      (widget.controller.canManageGroupMembers && !isOwner);
-
-                  return Card(
-                    key: ValueKey(player.name),
-                    elevation: 0,
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    color: palette.surfaceMuted,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: ListTile(
-                      dense: true,
-                      leading: PlayerAvatar(
-                        name: player.name,
-                        avatarColorValue: player.avatarColorValue,
-                        photoUrl: player.photoUrl,
-                        radius: 16,
-                      ),
-                      title: Text(
-                        player.name,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w900,
-                          color: palette.text,
-                        ),
-                      ),
-                      subtitle: Text(
-                        isOwner ? 'Group admin' : 'Tap to edit stats',
-                        style: TextStyle(
-                          color: isOwner ? palette.primary : palette.textMuted,
-                          fontSize: 11,
-                          fontWeight: isOwner
-                              ? FontWeight.w900
-                              : FontWeight.w600,
-                        ),
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: Icon(
-                              Icons.delete_outline,
-                              color: palette.textMuted,
-                            ),
-                            onPressed: players.length > 1 && canDelete
-                                ? () => _confirmRemovePlayer(player)
-                                : null,
-                          ),
-                          ReorderableDragStartListener(
-                            index: index,
-                            child: const Icon(
-                              Icons.drag_handle,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                      onTap: () {
-                        // Open profile dialog to view details
-                        final pIndex = widget.controller.profiles.indexWhere(
-                          (p) => p.name == player.name,
-                        );
-                        if (pIndex != -1) {
-                          showDialog(
-                            context: context,
-                            builder: (context) => ProfileDialog(
-                              profile: widget.controller.profiles[pIndex],
-                              controller: widget.controller,
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
         ],
       ),
     );
@@ -609,11 +622,6 @@ class _GroupPanel extends StatelessWidget {
                               ? palette.primary
                               : palette.surfaceMuted,
                           borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: isActive
-                                ? palette.primary
-                                : palette.border.withValues(alpha: 0.55),
-                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -658,6 +666,17 @@ class _GroupPanel extends StatelessWidget {
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 0.6,
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              height: 2,
+                              width: 34,
+                              decoration: BoxDecoration(
+                                color: isActive
+                                    ? Colors.white
+                                    : palette.border.withValues(alpha: 0.7),
+                                borderRadius: BorderRadius.circular(999),
                               ),
                             ),
                           ],

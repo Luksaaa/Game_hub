@@ -366,15 +366,12 @@ class _GenericSportPanel extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: palette.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: palette.border),
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          _Rule(palette: palette),
+          const SizedBox(height: 18),
           Icon(game.icon, size: 56, color: game.color),
           const SizedBox(height: 14),
           Text(
@@ -394,7 +391,9 @@ class _GenericSportPanel extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 18),
+          _Rule(palette: palette),
+          const SizedBox(height: 18),
           if (events.isNotEmpty)
             SizedBox(
               height: 112,
@@ -440,6 +439,8 @@ class _GenericSportPanel extends StatelessWidget {
                   ),
               ],
             ),
+          const SizedBox(height: 18),
+          _Rule(palette: palette),
         ],
       ),
     );
@@ -460,6 +461,21 @@ class _GenericSportPanel extends StatelessWidget {
     return words
         .map((word) => '${word[0].toUpperCase()}${word.substring(1)}')
         .join(' ');
+  }
+}
+
+class _Rule extends StatelessWidget {
+  const _Rule({required this.palette});
+
+  final AppPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 1,
+      width: double.infinity,
+      color: palette.border.withValues(alpha: 0.55),
+    );
   }
 }
 
@@ -487,7 +503,6 @@ class _SportEventCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: palette.surfaceMuted,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: palette.border.withValues(alpha: 0.55)),
       ),
       child: Row(
         children: [
