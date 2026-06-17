@@ -36,6 +36,20 @@ class PlayerProfile {
       totalThrows == 0 ? 0.0 : (totalScored / (totalThrows / 3));
 }
 
+class GroupMember {
+  const GroupMember({
+    required this.userId,
+    required this.displayName,
+    required this.role,
+  });
+
+  final String userId;
+  final String displayName;
+  final String role;
+
+  bool get isOwner => role == 'owner';
+}
+
 class GameStateController extends ChangeNotifier {
   GameStateController({required this.gameId, required this.gameName}) {
     _initializeServices();
@@ -99,12 +113,18 @@ class GameStateController extends ChangeNotifier {
   String? _liveHostUserId;
   String _activeSessionName = 'Personal session';
   String get activeSessionName => _activeSessionName;
+  final Map<String, Map<String, Object?>> _groupMembers = {};
 
   String? _liveMatchMessage;
   String? get liveMatchMessage => _liveMatchMessage;
 
   bool get isLiveMatchActive => _liveMatchId != null;
   bool get isDartsGame => gameId == 'darts';
+
+  bool isGroupOwner(PlayerScore player) {
+    final userId = player.userId;
+    return userId != null && userId == _liveHostUserId;
+  }
 
   void changeTab(int index) {
     _activeTabIndex = index;
@@ -117,6 +137,53 @@ class GameStateController extends ChangeNotifier {
 
   final List<FollowedUser> _following = [];
   List<FollowedUser> get following => List.unmodifiable(_following);
+
+  List<GroupMember> get groupMembers {
+    final members = <String, GroupMember>{};
+    for (final entry in _groupMembers.entries) {
+      final value = entry.value;
+      members[entry.key] = GroupMember(
+        userId: entry.key,
+        displayName: value['displayName'] as String? ?? 'Player',
+        role: value['role'] as String? ?? 'participant',
+      );
+    }
+
+    for (final player in _players) {
+      final userId = player.userId;
+      if (userId == null || userId.isEmpty) {
+        continue;
+      }
+      members.putIfAbsent(
+        userId,
+        () => GroupMember(
+          userId: userId,
+          displayName: player.name,
+          role: userId == _liveHostUserId ? 'owner' : 'participant',
+        ),
+      );
+    }
+
+    if (!_currentUser.isGuest && isLiveMatchActive) {
+      members.putIfAbsent(
+        _currentUser.id,
+        () => GroupMember(
+          userId: _currentUser.id,
+          displayName: _currentUser.displayName,
+          role: _currentUser.id == _liveHostUserId ? 'owner' : 'participant',
+        ),
+      );
+    }
+
+    final sorted = members.values.toList()
+      ..sort((a, b) {
+        if (a.isOwner != b.isOwner) {
+          return a.isOwner ? -1 : 1;
+        }
+        return a.displayName.compareTo(b.displayName);
+      });
+    return sorted;
+  }
 
   // Active game settings
   GameSettings _settings = const GameSettings(
@@ -312,6 +379,7 @@ class GameStateController extends ChangeNotifier {
     _activeSessionName = '';
     _isLiveHost = false;
     _liveHostUserId = null;
+    _groupMembers.clear();
     _liveMatchMessage = 'Create or join a group to sync this match.';
     notifyListeners();
   }
@@ -394,6 +462,7 @@ class GameStateController extends ChangeNotifier {
     _liveMatchId = null;
     _isLiveHost = false;
     _liveHostUserId = null;
+    _groupMembers.clear();
     _liveMatchMessage = 'Live match left.';
     notifyListeners();
   }
@@ -504,7 +573,10 @@ class GameStateController extends ChangeNotifier {
       _liveMatchId = payload['id'] as String? ?? _liveMatchId;
       _activeSessionName =
           payload['sessionName'] as String? ?? _activeSessionName;
-      _liveHostUserId = payload['hostUserId'] as String? ?? _liveHostUserId;
+      _liveHostUserId =
+          payload['hostUserId'] as String? ??
+          payload['ownerUserId'] as String? ??
+          _liveHostUserId;
       _isLiveHost = _liveHostUserId == _currentUser.id;
 
       if (settingsValue is Map) {
@@ -1037,6 +1109,16 @@ class GameStateController extends ChangeNotifier {
     }
 
     final members = Map<String, dynamic>.from(membersValue);
+    _groupMembers
+      ..clear()
+      ..addEntries(
+        members.entries.where((entry) => entry.value is Map).map((entry) {
+          return MapEntry(
+            entry.key,
+            Map<String, Object?>.from(entry.value as Map),
+          );
+        }),
+      );
     for (final entry in members.entries) {
       final userId = entry.key;
       final value = entry.value;
@@ -1169,7 +1251,9 @@ class GameStateController extends ChangeNotifier {
   }
 
   Map<String, Object?> _membersToMap() {
-    final members = <String, Object?>{};
+    final members = <String, Object?>{
+      for (final entry in _groupMembers.entries) entry.key: entry.value,
+    };
     if (!_currentUser.isGuest) {
       members[_currentUser.id] = {
         'role': _currentUser.id == _liveHostUserId ? 'owner' : 'participant',

@@ -388,6 +388,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onReorder: widget.controller.reorderPlayers,
                 itemBuilder: (context, index) {
                   final player = players[index];
+                  final isOwner = widget.controller.isGroupOwner(player);
 
                   return Card(
                     key: ValueKey(player.name),
@@ -416,10 +417,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                       subtitle: Text(
-                        'Tap to edit stats',
+                        isOwner ? 'Group admin' : 'Tap to edit stats',
                         style: TextStyle(
-                          color: palette.textMuted,
+                          color: isOwner ? palette.primary : palette.textMuted,
                           fontSize: 11,
+                          fontWeight: isOwner
+                              ? FontWeight.w900
+                              : FontWeight.w600,
                         ),
                       ),
                       trailing: Row(
@@ -617,6 +621,62 @@ class _GroupPanel extends StatelessWidget {
                   ),
                 ],
               ),
+              if (controller.groupMembers.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Members',
+                  style: TextStyle(
+                    color: palette.textMuted,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...controller.groupMembers.map(
+                  (member) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 15,
+                          backgroundColor: member.isOwner
+                              ? palette.primary
+                              : palette.surfaceMuted,
+                          foregroundColor: member.isOwner
+                              ? Colors.white
+                              : palette.text,
+                          child: Text(
+                            member.displayName.substring(0, 1).toUpperCase(),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            member.displayName,
+                            style: TextStyle(
+                              color: palette.text,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        if (member.isOwner)
+                          Text(
+                            'Admin',
+                            style: TextStyle(
+                              color: palette.primary,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 12,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ],
             const SizedBox(height: 12),
             Wrap(
