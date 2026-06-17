@@ -105,22 +105,25 @@ class _PlayScreenState extends State<PlayScreen> {
         _CurrentTurnHeader(controller: controller, palette: palette),
         const SizedBox(height: 14),
         Expanded(
-          child: Center(
-            child: widget.game.id == 'darts'
-                ? AspectRatio(
+          child: widget.game.id == 'darts'
+              ? Center(
+                  child: AspectRatio(
                     aspectRatio: 1,
                     child: Dartboard(
                       enabled: !controller.matchFinished,
                       onHit: controller.handleHit,
                       currentTurn: hits,
                     ),
-                  )
-                : _GenericSportPanel(
+                  ),
+                )
+              : SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: _GenericSportPanel(
                     game: widget.game,
                     controller: controller,
                     palette: palette,
                   ),
-          ),
+                ),
         ),
         const SizedBox(height: 14),
         actionRow,
@@ -381,12 +384,10 @@ class _GenericSportPanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           _Rule(palette: palette),
-          const SizedBox(height: 18),
-          Icon(game.icon, size: 56, color: game.color),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           Text(
             game.name,
             textAlign: TextAlign.center,
