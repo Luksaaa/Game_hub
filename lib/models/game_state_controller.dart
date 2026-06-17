@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 
 import 'dart_hit.dart';
@@ -173,32 +174,39 @@ class GameStateController extends ChangeNotifier {
     _accountMessage = null;
     notifyListeners();
 
-    final result = await _authRepository.signInWithGoogle();
-    if (result.isSuccess) {
-      _currentUser = result.session!;
-      _accountMessage = 'Signed in as ${_currentUser.displayName}.';
-      _ensureCurrentUserParticipant();
-      await _activateRealtimeMatchForCurrentUser();
-    } else {
-      _accountMessage = result.errorMessage;
+    try {
+      final result = await _authRepository.signInWithGoogle().timeout(
+        const Duration(seconds: 45),
+        onTimeout: () => const AuthResult.failure(
+          'Google sign-in timed out. Close the Google window and try again.',
+        ),
+      );
+      if (result.isSuccess) {
+        _currentUser = result.session!;
+        _accountMessage = 'Signed in as ${_currentUser.displayName}.';
+        _ensureCurrentUserParticipant();
+        await _activateRealtimeMatchForCurrentUser();
+      } else {
+        _accountMessage = result.errorMessage;
+      }
+    } catch (error) {
+      _accountMessage = 'Google sign-in failed: $error';
+    } finally {
+      _isSigningIn = false;
+      notifyListeners();
     }
-
-    _isSigningIn = false;
-    notifyListeners();
   }
 
   Future<void> signOut() async {
-    final signedOutUserId = _currentUser.id;
     await leaveLiveMatch();
     await _authRepository.signOut();
-    _players.removeWhere((player) => player.userId == signedOutUserId);
-    _profiles.removeWhere(
-      (profile) => profile.name == _currentUser.displayName,
-    );
+    _players.clear();
+    _profiles.clear();
+    _following.clear();
+    _matchHistory.clear();
     _currentTurn.clear();
-    _currentPlayerIndex = _players.isEmpty
-        ? 0
-        : _currentPlayerIndex % _players.length;
+    _currentPlayerIndex = 0;
+    _matchMessage = null;
     _currentUser = const UserSession(
       id: 'guest',
       displayName: 'Guest',
@@ -293,12 +301,12 @@ class GameStateController extends ChangeNotifier {
       return;
     }
 
-    final matchId = '$gameId-${_currentUser.id}-active';
+    final matchId = _buildPersonalGroupCode();
     _liveMatchId = matchId;
-    _activeSessionName = 'My $gameName session';
+    _activeSessionName = 'My $gameName group';
     _isLiveHost = true;
     _liveHostUserId = _currentUser.id;
-    _liveMatchMessage = 'Realtime sync is active for this session.';
+    _liveMatchMessage = 'Realtime sync is active for this group.';
 
     final payload = await _authRepository.fetchSession(matchId);
     _subscribeToLiveMatch(matchId);
@@ -320,25 +328,21 @@ class GameStateController extends ChangeNotifier {
 
   Future<void> createCloudSession(String sessionName) async {
     if (!_cloudFeaturesAvailable || _currentUser.isGuest) {
-      _liveMatchMessage = 'Sign in to create a synced session.';
+      _liveMatchMessage = 'Sign in to create a synced group.';
       notifyListeners();
       return;
     }
 
     final trimmed = sessionName.trim();
     final safeName = trimmed.isEmpty ? '$gameName session' : trimmed;
-    final userPart = _currentUser.id.length > 8
-        ? _currentUser.id.substring(0, 8)
-        : _currentUser.id;
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final sessionId = '$gameId-$userPart-$timestamp';
+    final sessionId = await _generateAvailableGroupCode();
 
     await _liveMatchSubscription?.cancel();
     _liveMatchId = sessionId;
     _activeSessionName = safeName;
     _isLiveHost = true;
     _liveHostUserId = _currentUser.id;
-    _liveMatchMessage = 'Created synced session $sessionId.';
+    _liveMatchMessage = 'Created group $sessionId.';
     _ensureCurrentUserParticipant();
     _subscribeToLiveMatch(sessionId);
     await _authRepository.addUserSession(
@@ -353,19 +357,19 @@ class GameStateController extends ChangeNotifier {
   }
 
   Future<void> joinCloudSession(String sessionId) async {
-    final trimmed = sessionId.trim();
+    final trimmed = sessionId.trim().toUpperCase();
     if (trimmed.isEmpty) {
       return;
     }
     if (!_cloudFeaturesAvailable || _currentUser.isGuest) {
-      _liveMatchMessage = 'Sign in to join a synced session.';
+      _liveMatchMessage = 'Sign in to join a synced group.';
       notifyListeners();
       return;
     }
 
     final payload = await _authRepository.fetchSession(trimmed);
     if (payload == null) {
-      _liveMatchMessage = 'Session not found.';
+      _liveMatchMessage = 'Group not found.';
       notifyListeners();
       return;
     }
@@ -379,6 +383,11 @@ class GameStateController extends ChangeNotifier {
     _applyLivePayload(payload);
     _ensureCurrentUserParticipant();
     _subscribeToLiveMatch(trimmed);
+    await _authRepository.addSessionMember(
+      sessionId: trimmed,
+      user: _currentUser,
+      role: 'participant',
+    );
     await _authRepository.addUserSession(
       userId: _currentUser.id,
       sessionId: trimmed,
@@ -420,7 +429,7 @@ class GameStateController extends ChangeNotifier {
     try {
       await _authRepository.saveSession(matchId, _livePayload());
     } catch (error) {
-      _liveMatchMessage = 'Could not sync live match: $error';
+      _liveMatchMessage = 'Could not sync group: $error';
       notifyListeners();
     }
   }
@@ -437,6 +446,7 @@ class GameStateController extends ChangeNotifier {
       'ownerUserId': _liveHostUserId ?? _currentUser.id,
       'updatedByUserId': _currentUser.id,
       'status': matchFinished ? 'finished' : 'active',
+      'members': _membersToMap(),
       'settings': _settingsToMap(_settings),
       'players': _players.map(_playerToMap).toList(),
       'participants': _players.map(_playerToParticipantMap).toList(),
@@ -1053,5 +1063,67 @@ class GameStateController extends ChangeNotifier {
       0xFF0096C7,
     ];
     return colors[_players.length % colors.length];
+  }
+
+  Future<String> _generateAvailableGroupCode() async {
+    for (var attempt = 0; attempt < 16; attempt++) {
+      final code = _randomGroupCode();
+      final existing = await _authRepository.fetchSession(code);
+      if (existing == null) {
+        return code;
+      }
+    }
+    return _randomGroupCode();
+  }
+
+  String _buildPersonalGroupCode() {
+    final hash = _currentUser.id.codeUnits.fold<int>(
+      0,
+      (value, unit) => (value * 31 + unit) & 0x7fffffff,
+    );
+    return '${_lettersFromNumber(hash)}${(hash % 1000).toString().padLeft(3, '0')}';
+  }
+
+  String _randomGroupCode() {
+    const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    final random = Random.secure();
+    final codeLetters = List.generate(
+      3,
+      (_) => letters[random.nextInt(letters.length)],
+    ).join();
+    final codeNumbers = List.generate(3, (_) => random.nextInt(10)).join();
+    return '$codeLetters$codeNumbers';
+  }
+
+  String _lettersFromNumber(int number) {
+    const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    var value = number;
+    return List.generate(3, (_) {
+      final letter = letters[value % letters.length];
+      value = value ~/ letters.length;
+      return letter;
+    }).join();
+  }
+
+  Map<String, Object?> _membersToMap() {
+    final members = <String, Object?>{};
+    if (!_currentUser.isGuest) {
+      members[_currentUser.id] = {
+        'role': _currentUser.id == _liveHostUserId ? 'owner' : 'participant',
+        'displayName': _currentUser.displayName,
+        'photoUrl': _currentUser.photoUrl,
+      };
+    }
+    for (final player in _players) {
+      final userId = player.userId;
+      if (userId == null || userId.isEmpty) {
+        continue;
+      }
+      members[userId] = {
+        'role': userId == _liveHostUserId ? 'owner' : 'participant',
+        'displayName': player.name,
+      };
+    }
+    return members;
   }
 }

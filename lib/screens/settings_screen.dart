@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../models/game_state_controller.dart';
 import '../models/game_settings.dart';
@@ -505,7 +506,7 @@ class _SessionSyncPanel extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Realtime Session',
+                  'Group',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w900,
                     color: palette.text,
@@ -546,8 +547,8 @@ class _SessionSyncPanel extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               activeSessionId == null
-                  ? 'Create or join a session to sync this scoreboard.'
-                  : '${controller.activeSessionName}\nID: $activeSessionId',
+                  ? 'Create or join a group to sync this scoreboard.'
+                  : '${controller.activeSessionName}\nCode: $activeSessionId',
               style: TextStyle(
                 color: palette.textMuted,
                 fontWeight: FontWeight.w700,
@@ -560,6 +561,25 @@ class _SessionSyncPanel extends StatelessWidget {
                 style: TextStyle(color: palette.textMuted, fontSize: 12),
               ),
             ],
+            if (activeSessionId != null) ...[
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: QrImageView(
+                    data: activeSessionId,
+                    version: QrVersions.auto,
+                    size: 118,
+                    backgroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
@@ -568,8 +588,8 @@ class _SessionSyncPanel extends StatelessWidget {
                 FilledButton.icon(
                   onPressed: () => _showTextActionDialog(
                     context: context,
-                    title: 'Create session',
-                    hintText: 'Session name',
+                    title: 'Create group',
+                    hintText: 'Group name',
                     controller: sessionNameController,
                     actionLabel: 'Create',
                     onSubmit: controller.createCloudSession,
@@ -580,8 +600,8 @@ class _SessionSyncPanel extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: () => _showTextActionDialog(
                     context: context,
-                    title: 'Join session',
-                    hintText: 'Session ID',
+                    title: 'Join group',
+                    hintText: 'Group code',
                     controller: joinSessionController,
                     actionLabel: 'Join',
                     onSubmit: controller.joinCloudSession,

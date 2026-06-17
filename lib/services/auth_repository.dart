@@ -255,6 +255,23 @@ class AuthRepository {
     });
   }
 
+  Future<void> addSessionMember({
+    required String sessionId,
+    required UserSession user,
+    required String role,
+  }) async {
+    if (!_firebaseReady || user.isGuest) {
+      return;
+    }
+
+    await _db.child('sessions/$sessionId/members/${user.id}').update({
+      'role': role,
+      'displayName': user.displayName,
+      'photoUrl': user.photoUrl,
+      'joinedAt': ServerValue.timestamp,
+    });
+  }
+
   Future<void> saveUserProfile(UserSession session) async {
     if (!_firebaseReady || session.isGuest) {
       return;
