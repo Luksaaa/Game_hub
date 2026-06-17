@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../models/dart_hit.dart';
 import '../models/game_state_controller.dart';
 import '../models/game_settings.dart';
+import '../models/player_score.dart';
 import '../theme/app_palette.dart';
 import '../widgets/player_avatar.dart';
 import '../widgets/search_dialog.dart'; // To reuse MatchRecapDialog
@@ -16,6 +18,10 @@ class HistoryScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final palette = AppPalette.of(context);
     final history = controller.matchHistory;
+    final playersWithTurns = controller.isDartsGame
+        ? controller.players.where((player) => player.turns.isNotEmpty).toList()
+        : <PlayerScore>[];
+    final hasCurrentThrows = playersWithTurns.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -31,7 +37,7 @@ class HistoryScreen extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: history.isEmpty
+          child: history.isEmpty && !hasCurrentThrows
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -61,9 +67,18 @@ class HistoryScreen extends StatelessWidget {
                   ),
                 )
               : ListView.builder(
-                  itemCount: history.length,
+                  itemCount: history.length + (hasCurrentThrows ? 1 : 0),
                   itemBuilder: (context, index) {
-                    final match = history[index];
+                    if (hasCurrentThrows && index == 0) {
+                      return _CurrentThrowHistory(
+                        players: playersWithTurns,
+                        palette: palette,
+                        theme: theme,
+                      );
+                    }
+
+                    final historyIndex = index - (hasCurrentThrows ? 1 : 0);
+                    final match = history[historyIndex];
                     final dateStr =
                         '${match.date.day}.${match.date.month}.${match.date.year} ${match.date.hour.toString().padLeft(2, '0')}:${match.date.minute.toString().padLeft(2, '0')}';
                     final isX01 = match.settings.mode == GameMode.x01;
@@ -155,6 +170,123 @@ class HistoryScreen extends StatelessWidget {
                 ),
         ),
       ],
+    );
+  }
+}
+
+class _CurrentThrowHistory extends StatelessWidget {
+  const _CurrentThrowHistory({
+    required this.players,
+    required this.palette,
+    required this.theme,
+  });
+
+  final List<PlayerScore> players;
+  final AppPalette palette;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Current Match Throws',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: palette.text,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 8),
+          for (final player in players) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  PlayerAvatar(
+                    name: player.name,
+                    avatarColorValue: player.avatarColorValue,
+                    photoUrl: player.photoUrl,
+                    radius: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          player.name,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: palette.text,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        for (
+                          var index = 0;
+                          index < player.turns.length;
+                          index++
+                        )
+                          _ThrowRow(
+                            turnIndex: index,
+                            turn: player.turns[index],
+                            palette: palette,
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(color: palette.border.withValues(alpha: 0.55)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ThrowRow extends StatelessWidget {
+  const _ThrowRow({
+    required this.turnIndex,
+    required this.turn,
+    required this.palette,
+  });
+
+  final int turnIndex;
+  final List<DartHit> turn;
+  final AppPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    final score = turn.fold<int>(0, (sum, hit) => sum + hit.score);
+    final labels = turn.map((hit) => hit.label).join(', ');
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Turn ${turnIndex + 1}: $labels',
+              style: TextStyle(
+                color: palette.textMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Text(
+            '+$score',
+            style: TextStyle(
+              color: palette.primary,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

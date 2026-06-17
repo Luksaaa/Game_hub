@@ -16,9 +16,6 @@ class ScoreboardScreen extends StatefulWidget {
 }
 
 class _ScoreboardScreenState extends State<ScoreboardScreen> {
-  // Track expanded state of turn logs for each player
-  final Map<String, bool> _expandedPlayers = {};
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -60,8 +57,6 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                   itemCount: players.length,
                   itemBuilder: (context, index) {
                     final player = players[index];
-                    final isExpanded = _expandedPlayers[player.name] ?? false;
-
                     return Container(
                       margin: const EdgeInsets.only(bottom: 8),
                       padding: const EdgeInsets.only(bottom: 8),
@@ -163,142 +158,54 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceAround,
                                   children: [
-                                    _MiniStat(
-                                      label: '180s',
-                                      value: '${player.count180s}',
-                                      palette: palette,
+                                    Expanded(
+                                      child: _MiniStat(
+                                        label: 'Wins',
+                                        value: '${player.stats['wins'] ?? 0}',
+                                        palette: palette,
+                                      ),
                                     ),
-                                    _MiniStat(
-                                      label: '140+',
-                                      value: '${player.count140plus}',
-                                      palette: palette,
+                                    Expanded(
+                                      child: _MiniStat(
+                                        label: '180s',
+                                        value: '${player.count180s}',
+                                        palette: palette,
+                                      ),
                                     ),
-                                    _MiniStat(
-                                      label: '100+',
-                                      value: '${player.count100plus}',
-                                      palette: palette,
+                                    Expanded(
+                                      child: _MiniStat(
+                                        label: '140+',
+                                        value: '${player.count140plus}',
+                                        palette: palette,
+                                      ),
                                     ),
-                                    _MiniStat(
-                                      label: 'Best Turn',
-                                      value: '${player.highestTurnScore}',
-                                      palette: palette,
+                                    Expanded(
+                                      child: _MiniStat(
+                                        label: '100+',
+                                        value: '${player.count100plus}',
+                                        palette: palette,
+                                      ),
                                     ),
-                                    _MiniStat(
-                                      label: 'Best No.',
-                                      value: player.bestNumber == null
-                                          ? '-'
-                                          : '${player.bestNumber} (${player.bestNumberHits})',
-                                      palette: palette,
+                                    Expanded(
+                                      child: _MiniStat(
+                                        label: 'Best Turn',
+                                        value: '${player.highestTurnScore}',
+                                        palette: palette,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: _MiniStat(
+                                        label: 'Best No.',
+                                        value: player.bestNumber == null
+                                            ? '-'
+                                            : '${player.bestNumber} (${player.bestNumberHits})',
+                                        palette: palette,
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
                             ),
-
-                          if (widget.controller.isDartsGame)
-                            InkWell(
-                              onTap: () {
-                                setState(() {
-                                  _expandedPlayers[player.name] = !isExpanded;
-                                });
-                              },
-                              borderRadius: const BorderRadius.vertical(
-                                bottom: Radius.circular(8),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8.0,
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      isExpanded
-                                          ? 'Hide Throw History'
-                                          : 'Show Throw History',
-                                      style: TextStyle(
-                                        color: palette.primary,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Icon(
-                                      isExpanded
-                                          ? Icons.keyboard_arrow_up
-                                          : Icons.keyboard_arrow_down,
-                                      color: palette.primary,
-                                      size: 18,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-
-                          if (widget.controller.isDartsGame && isExpanded) ...[
-                            const Divider(height: 1),
-                            Container(
-                              color: palette.surfaceMuted.withValues(
-                                alpha: 0.5,
-                              ),
-                              constraints: const BoxConstraints(maxHeight: 250),
-                              child: player.turns.isEmpty
-                                  ? const Padding(
-                                      padding: EdgeInsets.all(16.0),
-                                      child: Text(
-                                        'No turns thrown yet.',
-                                        style: TextStyle(
-                                          fontStyle: FontStyle.italic,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                    )
-                                  : ListView.builder(
-                                      shrinkWrap: true,
-                                      physics: const ClampingScrollPhysics(),
-                                      itemCount: player.turns.length,
-                                      itemBuilder: (context, tIdx) {
-                                        final turn = player.turns[tIdx];
-                                        final turnScore = turn.fold<int>(
-                                          0,
-                                          (sum, hit) => sum + hit.score,
-                                        );
-                                        final hitsLabels = turn
-                                            .map((hit) => hit.label)
-                                            .join(', ');
-
-                                        return ListTile(
-                                          dense: true,
-                                          title: Text(
-                                            'Turn ${tIdx + 1}: $hitsLabels',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: palette.text,
-                                            ),
-                                          ),
-                                          trailing: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: palette.primarySoft,
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              '+$turnScore',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w900,
-                                                color: palette.primary,
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                            ),
-                          ],
                         ],
                       ),
                     );
@@ -327,18 +234,24 @@ class _MiniStat extends StatelessWidget {
       children: [
         Text(
           value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
           style: TextStyle(
             color: palette.text,
             fontWeight: FontWeight.w900,
-            fontSize: 16,
+            fontSize: 15,
           ),
         ),
         Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
           style: TextStyle(
             color: palette.textMuted,
             fontWeight: FontWeight.bold,
-            fontSize: 10,
+            fontSize: 9,
           ),
         ),
       ],

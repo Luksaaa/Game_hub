@@ -218,6 +218,7 @@ class _CurrentTurnHeader extends StatelessWidget {
     final hits = controller.currentTurn;
     final turnTotal = hits.fold(0, (total, hit) => total + hit.score);
     final isDarts = controller.isDartsGame;
+    final checkoutHint = controller.checkoutHint;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -327,6 +328,18 @@ class _CurrentTurnHeader extends StatelessWidget {
                 Expanded(
                   child: Text(
                     controller.matchMessage!,
+                    textAlign: TextAlign.end,
+                    style: TextStyle(
+                      color: palette.accent,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ] else if (checkoutHint != null) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Checkout: $checkoutHint',
                     textAlign: TextAlign.end,
                     style: TextStyle(
                       color: palette.accent,

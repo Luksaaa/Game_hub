@@ -332,6 +332,27 @@ class GameStateController extends ChangeNotifier {
       : _players[_scoringPlayerIndex];
   bool get matchFinished => _players.isEmpty || _players.any((p) => p.isWinner);
 
+  String? get checkoutHint {
+    if (!isDartsGame ||
+        matchFinished ||
+        _settings.mode != GameMode.x01 ||
+        _players.isEmpty) {
+      return null;
+    }
+
+    final pendingScore = _currentTurn.fold<int>(
+      0,
+      (total, hit) => total + hit.score,
+    );
+    final remaining = currentPlayer.remaining - pendingScore;
+    final dartsLeft = 3 - _currentTurn.length;
+    if (remaining <= 0 || dartsLeft <= 0 || remaining > 170) {
+      return null;
+    }
+
+    return _checkoutFor(remaining, dartsLeft);
+  }
+
   // Match history list
   final List<MatchHistoryEntry> _matchHistory = [];
   List<MatchHistoryEntry> get matchHistory => List.unmodifiable(_matchHistory);
@@ -1370,11 +1391,16 @@ class GameStateController extends ChangeNotifier {
     }
 
     final isWinner = nextRemaining == 0;
+    final nextStats = Map<String, int>.from(player.stats);
+    if (isWinner) {
+      nextStats['wins'] = (nextStats['wins'] ?? 0) + 1;
+    }
     _players[playerIndex] = player.copyWith(
       remaining: nextRemaining,
       totalScored: player.totalScored + turnScore,
       turns: nextTurns,
       isWinner: isWinner,
+      stats: nextStats,
     );
 
     _matchMessage = isWinner
@@ -1408,6 +1434,94 @@ class GameStateController extends ChangeNotifier {
       OutRule.doubleOut => hit.isDouble,
       OutRule.masterOut => hit.isDouble || hit.band == SegmentBand.triple,
     };
+  }
+
+  String? _checkoutFor(int remaining, int dartsLeft) {
+    final hits = _checkoutHits();
+    for (var length = 1; length <= dartsLeft; length++) {
+      final result = _findCheckout(
+        remaining: remaining,
+        dartsLeft: length,
+        hits: hits,
+        current: const [],
+      );
+      if (result != null) {
+        return result.map((hit) => hit.label).join(' + ');
+      }
+    }
+    return null;
+  }
+
+  List<DartHit>? _findCheckout({
+    required int remaining,
+    required int dartsLeft,
+    required List<DartHit> hits,
+    required List<DartHit> current,
+  }) {
+    if (dartsLeft == 0) {
+      if (remaining == 0 &&
+          current.isNotEmpty &&
+          _isValidFinish(0, current.last)) {
+        return current;
+      }
+      return null;
+    }
+
+    for (final hit in hits) {
+      if (hit.score > remaining) {
+        continue;
+      }
+      final next = [...current, hit];
+      final result = _findCheckout(
+        remaining: remaining - hit.score,
+        dartsLeft: dartsLeft - 1,
+        hits: hits,
+        current: next,
+      );
+      if (result != null) {
+        return result;
+      }
+    }
+    return null;
+  }
+
+  List<DartHit> _checkoutHits() {
+    final hits = <DartHit>[
+      const DartHit(label: 'BULL', score: 50, band: SegmentBand.bull),
+      const DartHit(label: '25', score: 25, band: SegmentBand.outerBull),
+    ];
+
+    for (var number = 20; number >= 1; number--) {
+      hits.add(
+        DartHit(
+          label: 'T$number',
+          score: number * 3,
+          band: SegmentBand.triple,
+          number: number,
+        ),
+      );
+    }
+    for (var number = 20; number >= 1; number--) {
+      hits.add(
+        DartHit(
+          label: 'D$number',
+          score: number * 2,
+          band: SegmentBand.double,
+          number: number,
+        ),
+      );
+    }
+    for (var number = 20; number >= 1; number--) {
+      hits.add(
+        DartHit(
+          label: 'S$number',
+          score: number,
+          band: SegmentBand.single,
+          number: number,
+        ),
+      );
+    }
+    return hits;
   }
 
   void _advanceTurn() {
