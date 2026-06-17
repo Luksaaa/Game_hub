@@ -118,6 +118,7 @@ class GameStateController extends ChangeNotifier {
 
   String? _liveMatchMessage;
   String? get liveMatchMessage => _liveMatchMessage;
+  int _lastLocalSyncAt = 0;
 
   bool get isLiveMatchActive => _liveMatchId != null;
   bool get isDartsGame => gameId == 'darts';
@@ -661,6 +662,7 @@ class GameStateController extends ChangeNotifier {
     }
 
     try {
+      _lastLocalSyncAt = DateTime.now().millisecondsSinceEpoch;
       await _authRepository.saveSession(matchId, _livePayload());
       return true;
     } catch (error) {
@@ -682,6 +684,7 @@ class GameStateController extends ChangeNotifier {
       'hostUserId': _liveHostUserId ?? _currentUser.id,
       'ownerUserId': _liveHostUserId ?? _currentUser.id,
       'updatedByUserId': _currentUser.id,
+      'clientUpdatedAt': _lastLocalSyncAt,
       'status': matchFinished ? 'finished' : 'active',
       'members': _membersToMap(),
       'settings': _settingsToMap(_settings),
@@ -694,6 +697,13 @@ class GameStateController extends ChangeNotifier {
   }
 
   void _applyLivePayload(Map<String, dynamic> payload) {
+    final remoteUpdatedAt = _intFromValue(payload['clientUpdatedAt']);
+    if (remoteUpdatedAt != 0 &&
+        remoteUpdatedAt < _lastLocalSyncAt &&
+        _currentTurn.isNotEmpty) {
+      return;
+    }
+
     _isApplyingRemoteState = true;
     try {
       final settingsValue = payload['settings'];
@@ -913,6 +923,28 @@ class GameStateController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setManualDartScore(int index, int score) {
+    if (matchFinished || index < 0 || index > 2) {
+      return;
+    }
+
+    final normalizedScore = score.clamp(0, 60);
+    while (_currentTurn.length < index) {
+      _currentTurn.add(_manualDartHit(0));
+    }
+
+    final hit = _manualDartHit(normalizedScore);
+    if (index < _currentTurn.length) {
+      _currentTurn[index] = hit;
+    } else if (_currentTurn.length < 3) {
+      _currentTurn.add(hit);
+    }
+
+    _matchMessage = null;
+    _syncLiveMatch();
+    notifyListeners();
+  }
+
   void undoLastHit() {
     if (_currentTurn.isEmpty || matchFinished) {
       return;
@@ -933,6 +965,16 @@ class GameStateController extends ChangeNotifier {
         dx: 0,
         dy: -0.99,
       ),
+    );
+  }
+
+  DartHit _manualDartHit(int score) {
+    return DartHit(
+      label: score == 0 ? 'MISS' : score.toString(),
+      score: score,
+      band: score == 0 ? SegmentBand.miss : SegmentBand.single,
+      dx: 0,
+      dy: 0,
     );
   }
 

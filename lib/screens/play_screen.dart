@@ -231,6 +231,62 @@ class _CurrentTurnHeader extends StatelessWidget {
   final GameStateController controller;
   final AppPalette palette;
 
+  void _showManualDartDialog(BuildContext context, int index) {
+    final existing = index < controller.currentTurn.length
+        ? controller.currentTurn[index].score.toString()
+        : '';
+    final inputController = TextEditingController(text: existing);
+    final theme = Theme.of(context);
+
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: palette.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text('Dart ${index + 1} score'),
+        content: TextField(
+          controller: inputController,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          textInputAction: TextInputAction.done,
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: palette.text,
+            fontWeight: FontWeight.w900,
+          ),
+          decoration: InputDecoration(
+            hintText: '0 - 60',
+            filled: true,
+            fillColor: palette.surfaceMuted,
+          ),
+          onSubmitted: (_) => _saveManualDart(context, index, inputController),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => _saveManualDart(context, index, inputController),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _saveManualDart(
+    BuildContext context,
+    int index,
+    TextEditingController inputController,
+  ) {
+    final score = int.tryParse(inputController.text.trim());
+    if (score == null) {
+      return;
+    }
+    controller.setManualDartScore(index, score);
+    Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -302,27 +358,32 @@ class _CurrentTurnHeader extends StatelessWidget {
                 final isActive =
                     index == hits.length && !controller.matchFinished;
                 return Expanded(
-                  child: Container(
-                    height: 44,
-                    margin: EdgeInsets.only(right: index == 2 ? 0 : 8),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: hit == null
-                          ? palette.surfaceMuted
-                          : palette.primarySoft,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isActive ? palette.primary : palette.border,
-                        width: isActive ? 2 : 1,
-                      ),
-                    ),
-                    child: Text(
-                      hit?.label ?? 'Dart ${index + 1}',
-                      style: TextStyle(
+                  child: GestureDetector(
+                    onTap: controller.matchFinished
+                        ? null
+                        : () => _showManualDartDialog(context, index),
+                    child: Container(
+                      height: 44,
+                      margin: EdgeInsets.only(right: index == 2 ? 0 : 8),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
                         color: hit == null
-                            ? palette.textMuted
-                            : palette.primary,
-                        fontWeight: FontWeight.w900,
+                            ? palette.surfaceMuted
+                            : palette.primarySoft,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isActive ? palette.primary : palette.border,
+                          width: isActive ? 2 : 1,
+                        ),
+                      ),
+                      child: Text(
+                        hit?.label ?? 'Dart ${index + 1}',
+                        style: TextStyle(
+                          color: hit == null
+                              ? palette.textMuted
+                              : palette.primary,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ),
                   ),
