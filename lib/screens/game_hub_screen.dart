@@ -273,6 +273,13 @@ class _HubHeader extends StatelessWidget {
         const SizedBox(width: 6),
         PopupMenuButton<Locale?>(
           tooltip: l10n.t('common.language'),
+          color: palette.surface,
+          elevation: 10,
+          position: PopupMenuPosition.under,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: BorderSide(color: palette.border),
+          ),
           icon: Icon(Icons.translate_rounded, color: palette.text),
           initialValue: selectedLocale,
           onSelected: onLocaleChanged,
@@ -280,26 +287,84 @@ class _HubHeader extends StatelessWidget {
             for (final supportedLocale in AppLocalizations.supportedLocales)
               PopupMenuItem(
                 value: supportedLocale,
-                child: Text(AppLocalizations.languageName(supportedLocale)),
+                child: _PopupOption(
+                  icon: Icons.translate,
+                  label: AppLocalizations.languageName(supportedLocale),
+                  selected:
+                      selectedLocale.languageCode ==
+                      supportedLocale.languageCode,
+                  palette: palette,
+                ),
               ),
           ],
         ),
         PopupMenuButton<ThemeMode>(
           tooltip: l10n.t('common.theme'),
-          icon: Icon(Icons.contrast_rounded, color: palette.text),
+          color: palette.surface,
+          elevation: 10,
+          position: PopupMenuPosition.under,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: BorderSide(color: palette.border),
+          ),
+          icon: Icon(Icons.wb_sunny_rounded, color: palette.text),
           initialValue: resolvedThemeMode,
           onSelected: onThemeModeChanged,
           itemBuilder: (context) => [
             PopupMenuItem(
               value: ThemeMode.light,
-              child: Text(l10n.t('common.light')),
+              child: _PopupOption(
+                icon: Icons.wb_sunny_outlined,
+                label: l10n.t('common.light'),
+                selected: resolvedThemeMode == ThemeMode.light,
+                palette: palette,
+              ),
             ),
             PopupMenuItem(
               value: ThemeMode.dark,
-              child: Text(l10n.t('common.dark')),
+              child: _PopupOption(
+                icon: Icons.dark_mode_outlined,
+                label: l10n.t('common.dark'),
+                selected: resolvedThemeMode == ThemeMode.dark,
+                palette: palette,
+              ),
             ),
           ],
         ),
+      ],
+    );
+  }
+}
+
+class _PopupOption extends StatelessWidget {
+  const _PopupOption({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.palette,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final AppPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: selected ? palette.primary : palette.textMuted),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected ? palette.primary : palette.text,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+        if (selected) Icon(Icons.check, color: palette.primary, size: 18),
       ],
     );
   }

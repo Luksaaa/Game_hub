@@ -159,8 +159,21 @@ class _AppLocalizationsDelegate
 }
 
 const _safeStrings = {
-  'en': {'play.dartLabel': 'Dart {number}', 'play.dartInputHint': 'D6 or 12'},
+  'en': {
+    'common.change': 'Change',
+    'account.appSettings': 'App settings',
+    'account.followingCount': 'following',
+    'account.lightThemeHint': 'Light app appearance',
+    'account.darkThemeHint': 'Dark app appearance',
+    'play.dartLabel': 'Dart {number}',
+    'play.dartInputHint': 'D6 or 12',
+  },
   'hr': {
+    'common.change': 'Promijeni',
+    'account.appSettings': 'Postavke aplikacije',
+    'account.followingCount': 'praćenih',
+    'account.lightThemeHint': 'Svijetli prikaz aplikacije',
+    'account.darkThemeHint': 'Tamni prikaz aplikacije',
     'hub.note':
         'Pikado je trenutno spreman. Preseti i korisni\u010dke aktivnosti pripremljeni su kao moduli za kasnija pravila bodovanja.',
     'action.undo': 'Poni\u0161ti',

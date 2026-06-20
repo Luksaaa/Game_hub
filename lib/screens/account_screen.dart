@@ -37,7 +37,6 @@ class _AccountScreenState extends State<AccountScreen> {
   final _followController = TextEditingController();
   final _imagePicker = ImagePicker();
   int _selectedColor = 0xFF0F8B6B;
-  int _selectedSection = 0;
   String? _lastSyncedUserId;
 
   @override
@@ -107,77 +106,223 @@ class _AccountScreenState extends State<AccountScreen> {
           body: ResponsiveContent(
             maxWidth: 620,
             padding: const EdgeInsets.fromLTRB(18, 14, 18, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            child: ListView(
               children: [
-                _AccountSummary(
-                  user: user,
-                  selectedColor: _selectedColor,
+                _SettingsSectionLabel(
+                  label: _a(context, 'account.title').toUpperCase(),
                   palette: palette,
                 ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                const SizedBox(height: 10),
+                _SettingsGroup(
+                  palette: palette,
                   children: [
-                    _SectionChip(
-                      label: _a(context, 'account.profile'),
+                    _SettingsRow(
                       icon: Icons.person_outline,
-                      selected: _selectedSection == 0,
-                      onTap: () => setState(() => _selectedSection = 0),
+                      title: _a(context, 'account.profile'),
+                      subtitle: user.displayName,
+                      palette: palette,
+                      onTap: () => _showSectionSheet(
+                        title: _a(context, 'account.profile'),
+                        child: _buildProfileSection(user, palette),
+                      ),
                     ),
-                    _SectionChip(
-                      label: _a(context, 'account.login'),
-                      icon: Icons.login,
-                      selected: _selectedSection == 1,
-                      onTap: () => setState(() => _selectedSection = 1),
+                    _SettingsDivider(palette: palette),
+                    _SettingsRow(
+                      icon: user.isGuest
+                          ? Icons.person_outline
+                          : Icons.verified_user_outlined,
+                      title: user.isGuest
+                          ? _a(context, 'account.guestMode')
+                          : _a(context, 'account.signedIn'),
+                      subtitle: user.email ?? user.displayName,
+                      palette: palette,
+                      onTap: () => _showSectionSheet(
+                        title: _a(context, 'account.login'),
+                        child: _buildLoginSection(user, palette),
+                      ),
                     ),
-                    _SectionChip(
-                      label: _a(context, 'account.settings'),
-                      icon: Icons.tune,
-                      selected: _selectedSection == 2,
-                      onTap: () => setState(() => _selectedSection = 2),
-                    ),
-                    _SectionChip(
-                      label: _a(context, 'account.social'),
+                    _SettingsDivider(palette: palette),
+                    _SettingsRow(
                       icon: Icons.group_outlined,
-                      selected: _selectedSection == 3,
-                      onTap: () => setState(() => _selectedSection = 3),
-                    ),
-                    _SectionChip(
-                      label: _a(context, 'common.about'),
-                      icon: Icons.info_outline,
-                      selected: _selectedSection == 4,
-                      onTap: () => setState(() => _selectedSection = 4),
+                      title: _a(context, 'account.social'),
+                      subtitle:
+                          '${widget.controller.following.length} ${_a(context, 'account.followingCount')}',
+                      palette: palette,
+                      onTap: () => _showSectionSheet(
+                        title: _a(context, 'account.social'),
+                        child: _buildSocialSection(palette),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 160),
-                    child: ListView(
-                      key: ValueKey(_selectedSection),
-                      children: [
-                        switch (_selectedSection) {
-                          0 => _buildProfileSection(user, palette),
-                          1 => _buildLoginSection(user, palette),
-                          2 => _buildSettingsSection(
-                            AppLocalizations.of(context),
-                            palette,
-                          ),
-                          3 => _buildSocialSection(palette),
-                          _ => _buildAboutSection(palette),
-                        },
-                      ],
+                const SizedBox(height: 28),
+                _SettingsSectionLabel(
+                  label: _a(context, 'account.appSettings').toUpperCase(),
+                  palette: palette,
+                ),
+                const SizedBox(height: 10),
+                _SettingsGroup(
+                  palette: palette,
+                  children: [
+                    _SettingsRow(
+                      icon: Icons.language,
+                      title: _a(context, 'common.language'),
+                      subtitle: AppLocalizations.languageName(
+                        widget.locale ?? Localizations.localeOf(context),
+                      ),
+                      trailingLabel: _a(context, 'common.change'),
+                      palette: palette,
+                      onTap: () => _showLanguageSheet(palette),
                     ),
-                  ),
+                    _SettingsDivider(palette: palette),
+                    _SettingsRow(
+                      icon: Icons.wb_sunny_outlined,
+                      title: _a(context, 'common.theme'),
+                      subtitle: _themeLabel(context),
+                      trailingLabel: _a(context, 'common.change'),
+                      palette: palette,
+                      onTap: () => _showThemeSheet(palette),
+                    ),
+                    _SettingsDivider(palette: palette),
+                    _SettingsRow(
+                      icon: Icons.info_outline,
+                      title: _a(context, 'common.about'),
+                      subtitle: '${_a(context, 'common.version')} 1.0.1',
+                      palette: palette,
+                      onTap: () => _showSectionSheet(
+                        title: _a(context, 'common.about'),
+                        child: _buildAboutSection(palette),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  String _themeLabel(BuildContext context) {
+    final platformBrightness = MediaQuery.platformBrightnessOf(context);
+    final resolvedThemeMode = widget.themeMode == ThemeMode.system
+        ? platformBrightness == Brightness.dark
+              ? ThemeMode.dark
+              : ThemeMode.light
+        : widget.themeMode;
+    return resolvedThemeMode == ThemeMode.dark
+        ? _a(context, 'common.dark')
+        : _a(context, 'common.light');
+  }
+
+  void _showSectionSheet({required String title, required Widget child}) {
+    final palette = AppPalette.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: palette.background,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.72,
+        minChildSize: 0.36,
+        maxChildSize: 0.92,
+        builder: (context, scrollController) => ListView(
+          controller: scrollController,
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+          children: [
+            Center(
+              child: Container(
+                width: 46,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: palette.border,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              title,
+              style: TextStyle(
+                color: palette.text,
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 16),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showLanguageSheet(AppPalette palette) {
+    _showSectionSheet(
+      title: _a(context, 'common.language'),
+      child: _SettingsGroup(
+        palette: palette,
+        children: [
+          for (final supportedLocale in AppLocalizations.supportedLocales) ...[
+            _SettingsRow(
+              icon: Icons.translate,
+              title: AppLocalizations.languageName(supportedLocale),
+              subtitle: supportedLocale.languageCode.toUpperCase(),
+              selected:
+                  (widget.locale ?? Localizations.localeOf(context))
+                      .languageCode ==
+                  supportedLocale.languageCode,
+              palette: palette,
+              onTap: () {
+                widget.onLocaleChanged(supportedLocale);
+                Navigator.of(context).pop();
+              },
+            ),
+            if (supportedLocale != AppLocalizations.supportedLocales.last)
+              _SettingsDivider(palette: palette),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showThemeSheet(AppPalette palette) {
+    final current = _themeLabel(context);
+    _showSectionSheet(
+      title: _a(context, 'common.theme'),
+      child: _SettingsGroup(
+        palette: palette,
+        children: [
+          _SettingsRow(
+            icon: Icons.wb_sunny_outlined,
+            title: _a(context, 'common.light'),
+            subtitle: _a(context, 'account.lightThemeHint'),
+            selected: current == _a(context, 'common.light'),
+            palette: palette,
+            onTap: () {
+              widget.onThemeModeChanged(ThemeMode.light);
+              Navigator.of(context).pop();
+            },
+          ),
+          _SettingsDivider(palette: palette),
+          _SettingsRow(
+            icon: Icons.dark_mode_outlined,
+            title: _a(context, 'common.dark'),
+            subtitle: _a(context, 'account.darkThemeHint'),
+            selected: current == _a(context, 'common.dark'),
+            palette: palette,
+            onTap: () {
+              widget.onThemeModeChanged(ThemeMode.dark);
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -329,86 +474,6 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
             ),
           ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSettingsSection(AppLocalizations l10n, AppPalette palette) {
-    final platformBrightness = MediaQuery.platformBrightnessOf(context);
-    final resolvedThemeMode = widget.themeMode == ThemeMode.system
-        ? platformBrightness == Brightness.dark
-              ? ThemeMode.dark
-              : ThemeMode.light
-        : widget.themeMode;
-    final resolvedLocale = widget.locale ?? Localizations.localeOf(context);
-    final selectedLocale =
-        AppLocalizations.supportedLocales.any(
-          (locale) => locale.languageCode == resolvedLocale.languageCode,
-        )
-        ? AppLocalizations.supportedLocales.firstWhere(
-            (locale) => locale.languageCode == resolvedLocale.languageCode,
-          )
-        : AppLocalizations.supportedLocales.first;
-
-    return _Panel(
-      palette: palette,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _PanelTitle(
-            icon: Icons.tune,
-            title: _a(context, 'account.settings'),
-            palette: palette,
-          ),
-          const SizedBox(height: 18),
-          Text(
-            _a(context, 'common.theme'),
-            style: TextStyle(color: palette.text, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          SegmentedButton<ThemeMode>(
-            segments: [
-              ButtonSegment(
-                value: ThemeMode.light,
-                label: Text(_a(context, 'common.light')),
-              ),
-              ButtonSegment(
-                value: ThemeMode.dark,
-                label: Text(_a(context, 'common.dark')),
-              ),
-            ],
-            selected: {resolvedThemeMode},
-            onSelectionChanged: (selection) =>
-                widget.onThemeModeChanged(selection.first),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            _a(context, 'common.language'),
-            style: TextStyle(color: palette.text, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          DropdownButtonFormField<Locale?>(
-            initialValue: selectedLocale,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: palette.border),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
-            ),
-            items: [
-              for (final supportedLocale in AppLocalizations.supportedLocales)
-                DropdownMenuItem<Locale?>(
-                  value: supportedLocale,
-                  child: Text(AppLocalizations.languageName(supportedLocale)),
-                ),
-            ],
-            onChanged: widget.onLocaleChanged,
-          ),
         ],
       ),
     );
@@ -583,74 +648,6 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 }
 
-class _AccountSummary extends StatelessWidget {
-  const _AccountSummary({
-    required this.user,
-    required this.selectedColor,
-    required this.palette,
-  });
-
-  final UserSession user;
-  final int selectedColor;
-  final AppPalette palette;
-
-  @override
-  Widget build(BuildContext context) {
-    final statusText = user.isGuest
-        ? _a(context, 'account.guestMode')
-        : _a(context, 'account.signedIn');
-    return _Panel(
-      palette: palette,
-      child: Row(
-        children: [
-          _ProfileAvatar(user: user, selectedColor: selectedColor, radius: 30),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  user.displayName,
-                  style: TextStyle(
-                    color: palette.text,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 17,
-                  ),
-                ),
-                Text(
-                  user.isGuest ? statusText : user.email ?? statusText,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: palette.textMuted,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: palette.primarySoft,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              statusText,
-              style: TextStyle(
-                color: palette.primary,
-                fontWeight: FontWeight.w900,
-                fontSize: 12,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ProfileAvatar extends StatelessWidget {
   const _ProfileAvatar({
     required this.user,
@@ -698,58 +695,6 @@ class _ProfileAvatar extends StatelessWidget {
   }
 }
 
-class _SectionChip extends StatelessWidget {
-  const _SectionChip({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = AppPalette.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 140),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: selected ? palette.primarySoft : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected ? palette.primary : palette.border,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 17,
-              color: selected ? palette.primary : palette.textMuted,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: selected ? palette.primary : palette.text,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _PanelTitle extends StatelessWidget {
   const _PanelTitle({
     required this.icon,
@@ -776,6 +721,157 @@ class _PanelTitle extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _SettingsSectionLabel extends StatelessWidget {
+  const _SettingsSectionLabel({required this.label, required this.palette});
+
+  final String label;
+  final AppPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: palette.textMuted,
+          fontWeight: FontWeight.w900,
+          fontSize: 11,
+          letterSpacing: 3,
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsGroup extends StatelessWidget {
+  const _SettingsGroup({required this.children, required this.palette});
+
+  final List<Widget> children;
+  final AppPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(children: children),
+    );
+  }
+}
+
+class _SettingsDivider extends StatelessWidget {
+  const _SettingsDivider({required this.palette});
+
+  final AppPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 92),
+      child: Container(height: 1, color: palette.border.withValues(alpha: 0.8)),
+    );
+  }
+}
+
+class _SettingsRow extends StatelessWidget {
+  const _SettingsRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.palette,
+    required this.onTap,
+    this.trailingLabel,
+    this.selected = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final AppPalette palette;
+  final VoidCallback onTap;
+  final String? trailingLabel;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: palette.primarySoft,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: palette.primary, size: 25),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: palette.text,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: palette.textMuted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            if (trailingLabel != null)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: palette.surfaceMuted,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  trailingLabel!,
+                  style: TextStyle(
+                    color: palette.text,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                  ),
+                ),
+              )
+            else if (selected)
+              Icon(Icons.check_circle, color: palette.primary)
+            else
+              Icon(Icons.chevron_right, color: palette.textMuted),
+          ],
+        ),
+      ),
     );
   }
 }
