@@ -273,7 +273,7 @@ class _HubHeader extends StatelessWidget {
         const SizedBox(width: 6),
         PopupMenuButton<Locale?>(
           tooltip: l10n.t('common.language'),
-          icon: Icon(Icons.language, color: palette.text),
+          icon: Icon(Icons.translate_rounded, color: palette.text),
           initialValue: selectedLocale,
           onSelected: onLocaleChanged,
           itemBuilder: (context) => [
@@ -286,7 +286,7 @@ class _HubHeader extends StatelessWidget {
         ),
         PopupMenuButton<ThemeMode>(
           tooltip: l10n.t('common.theme'),
-          icon: Icon(Icons.brightness_6, color: palette.text),
+          icon: Icon(Icons.contrast_rounded, color: palette.text),
           initialValue: resolvedThemeMode,
           onSelected: onThemeModeChanged,
           itemBuilder: (context) => [
@@ -369,7 +369,10 @@ class _GameCard extends StatelessWidget {
                                 ? game.participants
                                 : game.modes)
                             .take(2))
-                      _ModeChip(label: label, color: game.color),
+                      _ModeChip(
+                        label: l10n.modeLabel(label),
+                        color: game.color,
+                      ),
                     if (game.participants.length > 2)
                       _ModeChip(
                         label: '+${game.participants.length - 2}',

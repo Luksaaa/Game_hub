@@ -75,14 +75,14 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                           ListTile(
                             dense: true,
                             contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 2,
+                              horizontal: 8,
+                              vertical: 0,
                             ),
                             leading: PlayerAvatar(
                               name: player.name,
                               avatarColorValue: player.avatarColorValue,
                               photoUrl: player.photoUrl,
-                              radius: 20,
+                              radius: 18,
                             ),
                             title: Row(
                               children: [
@@ -91,6 +91,7 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                                   style: theme.textTheme.titleSmall?.copyWith(
                                     fontWeight: FontWeight.w900,
                                     color: palette.text,
+                                    fontSize: 14,
                                   ),
                                 ),
                                 if (player.isWinner) ...[
@@ -111,7 +112,7 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                               style: TextStyle(
                                 color: palette.textMuted,
                                 fontWeight: FontWeight.w600,
-                                fontSize: 13,
+                                fontSize: 12,
                               ),
                             ),
                             trailing: Column(
@@ -152,8 +153,8 @@ class _ScoreboardScreenState extends State<ScoreboardScreen> {
                               ),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                  vertical: 6,
-                                  horizontal: 8,
+                                  vertical: 9,
+                                  horizontal: 10,
                                 ),
                                 decoration: BoxDecoration(
                                   color: palette.surfaceMuted,
@@ -245,7 +246,7 @@ class _MiniStat extends StatelessWidget {
           style: TextStyle(
             color: palette.text,
             fontWeight: FontWeight.w900,
-            fontSize: 13,
+            fontSize: 16,
           ),
         ),
         Text(
@@ -256,7 +257,7 @@ class _MiniStat extends StatelessWidget {
           style: TextStyle(
             color: palette.textMuted,
             fontWeight: FontWeight.bold,
-            fontSize: 8,
+            fontSize: 9,
           ),
         ),
       ],

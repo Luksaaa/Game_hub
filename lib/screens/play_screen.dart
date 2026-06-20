@@ -844,6 +844,9 @@ class _SportEventRow extends StatelessWidget {
 
   String _legacyActionLabel(AppLocalizations l10n, String label) {
     final normalized = label.toLowerCase().replaceAll(' ', '-');
+    if (normalized.contains('gre') || normalized.contains('fault')) {
+      return l10n.sportAction('fault', 'Gre\u0161ka');
+    }
     return l10n.sportAction(normalized, label);
   }
 }
@@ -983,20 +986,33 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final child = FittedBox(
-      fit: BoxFit.scaleDown,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18),
-          const SizedBox(width: 6),
-          Text(label, maxLines: 1, softWrap: false),
-        ],
+    final child = Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 18),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+          ),
+        ),
+      ],
+    );
+    final style = ButtonStyle(
+      minimumSize: const WidgetStatePropertyAll(Size(0, 52)),
+      padding: const WidgetStatePropertyAll(
+        EdgeInsets.symmetric(horizontal: 10),
       ),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
 
     return filled
-        ? FilledButton(onPressed: onPressed, child: child)
-        : OutlinedButton(onPressed: onPressed, child: child);
+        ? FilledButton(onPressed: onPressed, style: style, child: child)
+        : OutlinedButton(onPressed: onPressed, style: style, child: child);
   }
 }

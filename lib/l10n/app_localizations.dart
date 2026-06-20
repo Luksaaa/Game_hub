@@ -79,6 +79,11 @@ class AppLocalizations {
   );
 
   String sportAction(String id, String fallback) {
+    final safeLanguage = _safeSportActions[locale.languageCode];
+    final safeValue = safeLanguage?[id];
+    if (safeValue != null) {
+      return _cleanLocalizedText(safeValue);
+    }
     final language = _sportActions[locale.languageCode] ?? _sportActions['en']!;
     return _cleanLocalizedText(
       language[id] ?? _sportActions['en']![id] ?? fallback,
@@ -86,10 +91,20 @@ class AppLocalizations {
   }
 
   String sportStat(String key, String fallback) {
+    final safeLanguage = _safeSportStats[locale.languageCode];
+    final safeValue = safeLanguage?[key];
+    if (safeValue != null) {
+      return _cleanLocalizedText(safeValue);
+    }
     final language = _sportStats[locale.languageCode] ?? _sportStats['en']!;
     return _cleanLocalizedText(
       language[key] ?? _sportStats['en']![key] ?? fallback,
     );
+  }
+
+  String modeLabel(String label) {
+    final language = _modeLabelOverrides[locale.languageCode];
+    return _cleanLocalizedText(language?[label] ?? label);
   }
 }
 
@@ -263,6 +278,33 @@ const _safeStrings = {
     'play.bust': '{name} je bust. Score ostaje {score}.',
     'search.hint': 'Pretra\u017ei igra\u010de ili me\u010deve...',
     'search.empty': 'Nema rezultata.',
+    'game.snooker.name': 'Snooker',
+    'game.bowling.name': 'Kuglanje',
+    'game.badminton.name': 'Badminton',
+    'game.squash.name': 'Squash',
+    'game.basketball.name': 'Ko\u0161arka',
+    'game.volleyball.name': 'Odbojka',
+    'game.handball.name': 'Rukomet',
+    'game.golf.name': 'Golf',
+    'game.hockey.name': 'Hokej',
+    'game.baseball.name': 'Bejzbol',
+    'game.cricket.name': 'Kriket',
+    'game.rugby.name': 'Ragbi',
+    'game.foosball.name': 'Stolni nogomet',
+    'game.risk.name': 'Risk',
+    'game.uno.name': 'Uno',
+    'game.poker.name': 'Poker',
+    'game.blackjack.name': 'Blackjack',
+    'game.scrabble.name': 'Scrabble',
+    'game.yahtzee.name': 'Yahtzee',
+    'game.dominoes.name': 'Domino',
+    'game.dixit.name': 'Dixit',
+    'game.ticket-to-ride.name': 'Ticket to Ride',
+    'game.carcassonne.name': 'Carcassonne',
+    'game.clue.name': 'Clue',
+    'game.trivia.name': 'Kviz',
+    'game.padel.name': 'Padel',
+    'game.pickleball.name': 'Pickleball',
   },
   'de': {'play.dartLabel': 'Wurf {number}', 'play.dartInputHint': 'D6 oder 12'},
   'es': {'play.dartLabel': 'Dardo {number}', 'play.dartInputHint': 'D6 o 12'},
@@ -281,6 +323,122 @@ const _safeStrings = {
   'zh': {
     'play.dartLabel': '\u98de\u9556 {number}',
     'play.dartInputHint': 'D6 \u6216 12',
+  },
+};
+
+const _modeLabelOverrides = {
+  'hr': {
+    'Count up': 'Zbrajanje',
+    'Best of 3': 'Do 2 pobjede',
+    'Best of 5': 'Do 3 pobjede',
+    '11 points': '11 bodova',
+    '21 points': '21 bod',
+    'Singles': 'Pojedina\u010dno',
+    'Doubles': 'Parovi',
+    'Tie-break': 'Tie-break',
+    '5v5': '5v5',
+    '7v7': '7v7',
+    '11v11': '11v11',
+    '8-ball': '8-ball',
+    '9-ball': '9-ball',
+    'Straight pool': 'Straight pool',
+    'Frames': 'Frameovi',
+    '10 frames': '10 frameova',
+    'Teams': 'Timovi',
+    'Practice': 'Trening',
+    'PAR': 'PAR',
+    '3v3': '3v3',
+    'Pickup': 'Pickup',
+    'Indoor': 'Dvorana',
+    'Beach': 'Pijesak',
+    'Timer': 'Timer',
+    'Penalties': 'Kazne',
+    '9 holes': '9 rupa',
+    '18 holes': '18 rupa',
+    'Stroke play': 'Stroke play',
+    'Ice': 'Led',
+    'Field': 'Teren',
+    '9 innings': '9 izmjena',
+    'Softball': 'Softball',
+    'Casual': 'Opu\u0161teno',
+    'T20': 'T20',
+    'ODI': 'ODI',
+    'Test': 'Test',
+    'Union': 'Union',
+    'League': 'Liga',
+    'Sevens': 'Sedmice',
+    'First to 10': 'Prvi do 10',
+    'Rapid': 'Rapid',
+    'Blitz': 'Blitz',
+    'Classical': 'Klasi\u010dno',
+    '10 points': '10 bodova',
+    'Expansion': 'Pro\u0161irenje',
+    'Classic': 'Klasi\u010dno',
+    'Speed die': 'Brza kocka',
+    'House rules': 'Ku\u0107na pravila',
+    'World': 'Svijet',
+    'Missions': 'Misije',
+    '500 points': '500 bodova',
+    'Rounds': 'Runde',
+    'Texas Holdem': 'Texas Holdem',
+    'Tournament': 'Turnir',
+    'Cash': 'Cash',
+    'Bankroll': 'Bankroll',
+    'Dealer': 'Djelitelj',
+    'Timed': 'Na vrijeme',
+    'Bonus': 'Bonus',
+    'Block': 'Blok',
+    'Draw': 'Vuci',
+    'Europe': 'Europa',
+    'USA': 'SAD',
+    'Base': 'Osnovno',
+    'Fields': 'Polja',
+    'Notes': 'Bilje\u0161ke',
+    'Sudden death': 'Zlatni bod',
+    '1v1': '1v1',
+    '2v2': '2v2',
+  },
+};
+
+const _safeSportActions = {
+  'hr': {
+    'goal': 'Gol',
+    'yellow-card': '\u017duti',
+    'red-card': 'Crveni',
+    'foul': 'Faul',
+    'point': 'Bod',
+    'game': 'Gem',
+    'set': 'Set',
+    'fault': 'Gre\u0161ka',
+    'one': '+1',
+    'two': '+2',
+    'three': '+3',
+    'pot': 'Pogodak',
+    'frame': 'Frame',
+    'visit': 'Posjet',
+    'round': 'Runda',
+    'bonus': 'Bonus',
+    'penalty': 'Kazna',
+    'win': 'Pobjeda',
+    'draw': 'Remi',
+    'loss': 'Poraz',
+    'timeout': 'Time-out',
+    'next': 'Dalje',
+  },
+};
+
+const _safeSportStats = {
+  'hr': {
+    'goals': 'Golovi',
+    'yellowCards': '\u017duti kartoni',
+    'redCards': 'Crveni kartoni',
+    'fouls': 'Faulovi',
+    'points': 'Bodovi',
+    'sets': 'Setovi',
+    'faults': 'Gre\u0161ke',
+    'wins': 'Pobjede',
+    'draws': 'Remiji',
+    'losses': 'Porazi',
   },
 };
 
