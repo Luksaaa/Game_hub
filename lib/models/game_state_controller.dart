@@ -1139,25 +1139,46 @@ class GameStateController extends ChangeNotifier {
 
     final normalized = value.startsWith('@') ? value.substring(1) : value;
     final id = normalized.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
-    if (_following.any((user) => user.id == id)) {
+    if (_following.any((user) => user.id == id) ||
+        (!_currentUser.isGuest && _currentUser.id == id)) {
       return;
     }
 
-    final followedUser = FollowedUser(
-      id: id,
-      displayName: normalized,
-      handle: '@$id',
-    );
-    _following.add(followedUser);
+    if (_currentUser.isGuest) {
+      _addFollowedUser(
+        FollowedUser(id: id, displayName: normalized, handle: '@$id'),
+      );
+      _accountMessage = 'Following saved for this guest session.';
+      notifyListeners();
+      return;
+    }
+
     _authRepository
-        .followUser(ownerUserId: _currentUser.id, followedUser: followedUser)
+        .findPublicUser(value)
+        .then((foundUser) {
+          final followedUser =
+              foundUser ??
+              FollowedUser(id: id, displayName: normalized, handle: '@$id');
+          if (followedUser.id == _currentUser.id ||
+              _following.any((user) => user.id == followedUser.id)) {
+            return Future<void>.value();
+          }
+          _addFollowedUser(followedUser);
+          _accountMessage = 'Following ${followedUser.displayName}.';
+          notifyListeners();
+          return _authRepository.followUser(
+            ownerUserId: _currentUser.id,
+            followedUser: followedUser,
+          );
+        })
         .catchError((Object error) {
           _accountMessage = 'Could not sync following to Firebase: $error';
+          notifyListeners();
         });
-    _accountMessage = _currentUser.isGuest
-        ? 'Following saved for this guest session.'
-        : 'Following ${followedUser.displayName}.';
-    notifyListeners();
+  }
+
+  void _addFollowedUser(FollowedUser followedUser) {
+    _following.add(followedUser);
   }
 
   List<MatchHistoryEntry> get filteredHistory {

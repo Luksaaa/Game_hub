@@ -251,12 +251,19 @@ class _RootScreenState extends State<RootScreen> {
     });
   }
 
+  void _handleDeleteActivity(String id) {
+    setState(() {
+      _customActivities.removeWhere((activity) => activity.id == id);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return SportMatchScreen(
       game: sportGames.first,
       customActivities: _customActivities,
       onCreateActivity: _handleCreateActivity,
+      onDeleteActivity: _handleDeleteActivity,
       themeMode: widget.themeMode,
       locale: widget.locale,
       onThemeModeChanged: widget.onThemeModeChanged,
@@ -270,6 +277,7 @@ class SportMatchScreen extends StatefulWidget {
     required this.game,
     required this.customActivities,
     required this.onCreateActivity,
+    required this.onDeleteActivity,
     required this.themeMode,
     required this.locale,
     required this.onThemeModeChanged,
@@ -285,6 +293,7 @@ class SportMatchScreen extends StatefulWidget {
     required List<String> participants,
   })
   onCreateActivity;
+  final ValueChanged<String> onDeleteActivity;
   final ThemeMode themeMode;
   final Locale? locale;
   final ValueChanged<ThemeMode> onThemeModeChanged;
@@ -386,6 +395,8 @@ class _SportMatchScreenState extends State<SportMatchScreen> {
           locale: widget.locale,
           customActivities: widget.customActivities,
           onCreateActivity: widget.onCreateActivity,
+          onDeleteActivity: widget.onDeleteActivity,
+          controller: _controller,
           onThemeModeChanged: widget.onThemeModeChanged,
           onLocaleChanged: widget.onLocaleChanged,
           onOpenSport: (game) {
@@ -395,6 +406,7 @@ class _SportMatchScreenState extends State<SportMatchScreen> {
                   game: game,
                   customActivities: widget.customActivities,
                   onCreateActivity: widget.onCreateActivity,
+                  onDeleteActivity: widget.onDeleteActivity,
                   themeMode: widget.themeMode,
                   locale: widget.locale,
                   onThemeModeChanged: widget.onThemeModeChanged,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/game_state_controller.dart';
 import '../models/sport_game.dart';
 import '../theme/app_palette.dart';
 import '../widgets/responsive_content.dart';
@@ -11,9 +12,11 @@ class GameHubScreen extends StatefulWidget {
     required this.locale,
     required this.customActivities,
     required this.onCreateActivity,
+    required this.onDeleteActivity,
     required this.onThemeModeChanged,
     required this.onLocaleChanged,
     required this.onOpenSport,
+    this.controller,
     super.key,
   });
 
@@ -26,15 +29,26 @@ class GameHubScreen extends StatefulWidget {
     required List<String> participants,
   })
   onCreateActivity;
+  final ValueChanged<String> onDeleteActivity;
   final ValueChanged<ThemeMode> onThemeModeChanged;
   final ValueChanged<Locale?> onLocaleChanged;
   final ValueChanged<SportGame> onOpenSport;
+  final GameStateController? controller;
 
   @override
   State<GameHubScreen> createState() => _GameHubScreenState();
 }
 
 class _GameHubScreenState extends State<GameHubScreen> {
+  void _followUser(String value) {
+    final controller = widget.controller;
+    if (controller == null) {
+      return;
+    }
+    controller.followUser(value);
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = AppPalette.of(context);
@@ -72,6 +86,16 @@ class _GameHubScreenState extends State<GameHubScreen> {
                       ),
                     ),
                   ),
+                  if (widget.controller != null)
+                    SliverPadding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      sliver: SliverToBoxAdapter(
+                        child: _QuickFollowPanel(
+                          controller: widget.controller!,
+                          onFollow: () => _showFollowDialog(context),
+                        ),
+                      ),
+                    ),
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     sliver: SliverGrid(
@@ -79,6 +103,9 @@ class _GameHubScreenState extends State<GameHubScreen> {
                         final game = games[index];
                         return _GameCard(
                           game: game,
+                          onDelete: game.isCustom
+                              ? () => _confirmDeleteActivity(context, game)
+                              : null,
                           onTap: () {
                             widget.onOpenSport(game);
                           },
@@ -88,7 +115,7 @@ class _GameHubScreenState extends State<GameHubScreen> {
                         maxCrossAxisExtent: isWide ? 260 : 190,
                         mainAxisSpacing: 12,
                         crossAxisSpacing: 12,
-                        mainAxisExtent: 116,
+                        mainAxisExtent: 138,
                       ),
                     ),
                   ),
@@ -119,78 +146,231 @@ class _GameHubScreenState extends State<GameHubScreen> {
     final participantsController = TextEditingController();
     final palette = AppPalette.of(context);
     final l10n = AppLocalizations.of(context);
+    final followers = widget.controller?.following ?? const [];
 
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        var showNameError = false;
+        var showDescriptionError = false;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            void refresh() => setDialogState(() {});
+
+            void addFollower(String displayName) {
+              final current = participantsController.text
+                  .split(',')
+                  .map((participant) => participant.trim())
+                  .where((participant) => participant.isNotEmpty)
+                  .toList();
+              if (!current.any(
+                (participant) =>
+                    participant.toLowerCase() == displayName.toLowerCase(),
+              )) {
+                current.add(displayName);
+              }
+              participantsController.text = current.join(', ');
+              refresh();
+            }
+
+            return AlertDialog(
+              backgroundColor: palette.surface,
+              title: Text(l10n.t('hub.createActivity')),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      textInputAction: TextInputAction.next,
+                      onChanged: (_) => refresh(),
+                      decoration: InputDecoration(
+                        labelText: l10n.t('activity.name'),
+                        hintText: l10n.t('activity.nameHint'),
+                        errorText:
+                            showNameError && nameController.text.trim().isEmpty
+                            ? l10n.t('activity.nameRequired')
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: descriptionController,
+                      textInputAction: TextInputAction.next,
+                      onChanged: (_) => refresh(),
+                      decoration: InputDecoration(
+                        labelText: l10n.t('activity.rules'),
+                        hintText: l10n.t('activity.rulesHint'),
+                        errorText:
+                            showDescriptionError &&
+                                descriptionController.text.trim().isEmpty
+                            ? l10n.t('activity.descriptionRequired')
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: participantsController,
+                      onChanged: (_) => refresh(),
+                      decoration: InputDecoration(
+                        labelText: l10n.t('activity.participantsOptional'),
+                        hintText: l10n.t('activity.participantsHint'),
+                      ),
+                    ),
+                    if (followers.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          l10n.t('activity.followerSuggestions'),
+                          style: TextStyle(
+                            color: palette.textMuted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final follower in followers)
+                              ActionChip(
+                                label: Text(follower.displayName),
+                                avatar: const Icon(Icons.person_add, size: 16),
+                                onPressed: () =>
+                                    addFollower(follower.displayName),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(
+                    l10n.t('common.cancel'),
+                    style: TextStyle(color: palette.textMuted),
+                  ),
+                ),
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: palette.primary,
+                  ),
+                  onPressed: () {
+                    final hasName = nameController.text.trim().isNotEmpty;
+                    final hasDescription = descriptionController.text
+                        .trim()
+                        .isNotEmpty;
+                    if (!hasName || !hasDescription) {
+                      setDialogState(() {
+                        showNameError = true;
+                        showDescriptionError = true;
+                      });
+                      return;
+                    }
+                    widget.onCreateActivity(
+                      name: nameController.text.trim(),
+                      description: descriptionController.text.trim(),
+                      participants: participantsController.text
+                          .split(',')
+                          .map((participant) => participant.trim())
+                          .where((participant) => participant.isNotEmpty)
+                          .toList(),
+                    );
+                    if (mounted) {
+                      setState(() {});
+                    }
+                    Navigator.of(dialogContext).pop();
+                  },
+                  icon: const Icon(Icons.add),
+                  label: Text(l10n.t('common.create')),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    // Keep these alive through the dialog route closing animation.
+  }
+
+  Future<void> _showFollowDialog(BuildContext context) async {
+    final followController = TextEditingController();
+    final palette = AppPalette.of(context);
+    final l10n = AppLocalizations.of(context);
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         backgroundColor: palette.surface,
-        title: Text(l10n.t('hub.createActivity')),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                textInputAction: TextInputAction.next,
-                decoration: InputDecoration(
-                  labelText: l10n.t('activity.name'),
-                  hintText: l10n.t('activity.nameHint'),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descriptionController,
-                textInputAction: TextInputAction.next,
-                decoration: InputDecoration(
-                  labelText: l10n.t('activity.rules'),
-                  hintText: l10n.t('activity.rulesHint'),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: participantsController,
-                decoration: InputDecoration(
-                  labelText: l10n.t('activity.participants'),
-                  hintText: l10n.t('activity.participantsHint'),
-                ),
-              ),
-            ],
-          ),
+        title: Text(l10n.t('account.social')),
+        content: TextField(
+          controller: followController,
+          autofocus: true,
+          decoration: InputDecoration(labelText: l10n.t('account.followUser')),
+          onSubmitted: (value) {
+            _followUser(value);
+            Navigator.of(dialogContext).pop();
+          },
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(
-              l10n.t('common.cancel'),
-              style: TextStyle(color: palette.textMuted),
-            ),
+            child: Text(l10n.t('common.cancel')),
           ),
           FilledButton.icon(
             style: FilledButton.styleFrom(backgroundColor: palette.primary),
             onPressed: () {
-              widget.onCreateActivity(
-                name: nameController.text,
-                description: descriptionController.text,
-                participants: participantsController.text
-                    .split(',')
-                    .map((participant) => participant.trim())
-                    .where((participant) => participant.isNotEmpty)
-                    .toList(),
-              );
-              if (mounted) {
-                setState(() {});
-              }
+              _followUser(followController.text);
               Navigator.of(dialogContext).pop();
             },
-            icon: const Icon(Icons.add),
-            label: Text(l10n.t('common.create')),
+            icon: const Icon(Icons.person_add_alt_1),
+            label: Text(l10n.t('common.add')),
           ),
         ],
       ),
     );
+    // Keep this alive through the dialog route closing animation.
+  }
 
-    // The dialog route can still rebuild during its closing animation.
-    // Controllers are intentionally left alive for that short route lifetime.
+  Future<void> _confirmDeleteActivity(
+    BuildContext context,
+    SportGame game,
+  ) async {
+    final palette = AppPalette.of(context);
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: palette.surface,
+        title: Text(l10n.t('activity.deleteTitle')),
+        content: Text(
+          l10n.t('activity.deleteBody').replaceAll('{name}', game.name),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.t('common.cancel')),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.t('common.delete')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      widget.onDeleteActivity(game.id);
+      setState(() {});
+    }
   }
 }
 
@@ -370,11 +550,98 @@ class _PopupOption extends StatelessWidget {
   }
 }
 
+class _QuickFollowPanel extends StatelessWidget {
+  const _QuickFollowPanel({required this.controller, required this.onFollow});
+
+  final GameStateController controller;
+  final VoidCallback onFollow;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppPalette.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(color: palette.border.withValues(alpha: 0.45)),
+              bottom: BorderSide(color: palette.border.withValues(alpha: 0.45)),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.group_outlined, color: palette.primary),
+                  const SizedBox(width: 10),
+                  Text(
+                    l10n.t('account.social'),
+                    style: TextStyle(
+                      color: palette.text,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: palette.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: onFollow,
+                  icon: const Icon(Icons.person_add_alt_1),
+                  label: Text(l10n.t('account.followUser')),
+                ),
+              ),
+              const SizedBox(height: 10),
+              if (controller.following.isEmpty)
+                Text(
+                  l10n.t('account.noFollowed'),
+                  style: TextStyle(
+                    color: palette.textMuted,
+                    fontWeight: FontWeight.w700,
+                  ),
+                )
+              else
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final followed in controller.following)
+                      Chip(
+                        avatar: CircleAvatar(
+                          backgroundColor: palette.primarySoft,
+                          foregroundColor: palette.primary,
+                          child: Text(
+                            followed.displayName.substring(0, 1).toUpperCase(),
+                          ),
+                        ),
+                        label: Text(followed.displayName),
+                      ),
+                  ],
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _GameCard extends StatelessWidget {
-  const _GameCard({required this.game, required this.onTap});
+  const _GameCard({required this.game, required this.onTap, this.onDelete});
 
   final SportGame game;
   final VoidCallback onTap;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -411,6 +678,18 @@ class _GameCard extends StatelessWidget {
                   ),
                   const Spacer(),
                   _StatusBadge(isReady: isReady, isCustom: game.isCustom),
+                  if (onDelete != null) ...[
+                    const SizedBox(width: 4),
+                    InkResponse(
+                      onTap: onDelete,
+                      radius: 18,
+                      child: Icon(
+                        Icons.delete_outline,
+                        color: palette.textMuted,
+                        size: 18,
+                      ),
+                    ),
+                  ],
                 ],
               ),
               const SizedBox(height: 8),

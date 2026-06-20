@@ -237,6 +237,51 @@ class AuthRepository {
     });
   }
 
+  Future<FollowedUser?> findPublicUser(String query) async {
+    if (!_firebaseReady) {
+      return null;
+    }
+
+    final normalizedQuery = query
+        .trim()
+        .replaceFirst(RegExp(r'^@'), '')
+        .toLowerCase();
+    if (normalizedQuery.isEmpty) {
+      return null;
+    }
+
+    final snapshot = await _db.child('publicUsers').get();
+    final value = snapshot.value;
+    if (value is! Map) {
+      return null;
+    }
+
+    for (final entry in Map<String, dynamic>.from(value).entries) {
+      final userId = entry.key;
+      final userValue = entry.value;
+      if (userValue is! Map) {
+        continue;
+      }
+      final profile = Map<String, dynamic>.from(userValue);
+      final displayName = (profile['displayName'] as String?)?.trim();
+      if (displayName == null || displayName.isEmpty) {
+        continue;
+      }
+      final handle = '@${userId.toLowerCase()}';
+      if (userId.toLowerCase() == normalizedQuery ||
+          displayName.toLowerCase() == normalizedQuery ||
+          handle.substring(1) == normalizedQuery) {
+        return FollowedUser(
+          id: userId,
+          displayName: displayName,
+          handle: handle,
+        );
+      }
+    }
+
+    return null;
+  }
+
   Future<void> saveSession(
     String sessionId,
     Map<String, Object?> payload,
