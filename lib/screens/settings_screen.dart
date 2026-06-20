@@ -687,6 +687,73 @@ class _GroupListTile extends StatelessWidget {
   }
 }
 
+class _ImportGroupSelection {
+  const _ImportGroupSelection({required this.group, required this.mode});
+
+  final UserGameGroup group;
+  final GroupImportMode mode;
+}
+
+class _ImportModeTile extends StatelessWidget {
+  const _ImportModeTile({
+    required this.selected,
+    required this.title,
+    required this.subtitle,
+    required this.palette,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final String title;
+  final String subtitle;
+  final AppPalette palette;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              selected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: selected ? palette.primary : palette.textMuted,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: palette.text,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: palette.textMuted,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _GroupDetailScreen extends StatelessWidget {
   const _GroupDetailScreen({
     required this.controller,
@@ -711,56 +778,139 @@ class _GroupDetailScreen extends StatelessWidget {
       return;
     }
 
-    final selected = await showDialog<UserGameGroup>(
+    final selection = await showDialog<_ImportGroupSelection>(
       context: context,
       builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor: palette.surface,
-          title: Text(
-            'Import stats',
-            style: TextStyle(color: palette.text, fontWeight: FontWeight.w900),
-          ),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.separated(
-              shrinkWrap: true,
-              itemCount: groups.length,
-              separatorBuilder: (_, _) => Divider(color: palette.border),
-              itemBuilder: (context, index) {
-                final group = groups[index];
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.groups, color: palette.primary),
-                  title: Text(
-                    group.sessionName,
-                    style: TextStyle(
-                      color: palette.text,
-                      fontWeight: FontWeight.w800,
+        var mode = GroupImportMode.addToCurrent;
+        UserGameGroup? selectedGroup;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: palette.surface,
+              title: Text(
+                'Import stats',
+                style: TextStyle(
+                  color: palette.text,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: groups.length,
+                        separatorBuilder: (_, _) =>
+                            Divider(color: palette.border),
+                        itemBuilder: (context, index) {
+                          final group = groups[index];
+                          final isSelected =
+                              selectedGroup?.sessionId == group.sessionId;
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              isSelected
+                                  ? Icons.radio_button_checked
+                                  : Icons.groups,
+                              color: isSelected
+                                  ? palette.primary
+                                  : palette.textMuted,
+                            ),
+                            title: Text(
+                              group.sessionName,
+                              style: TextStyle(
+                                color: palette.text,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            subtitle: Text(
+                              group.groupCode,
+                              style: TextStyle(color: palette.textMuted),
+                            ),
+                            onTap: () {
+                              setDialogState(() {
+                                selectedGroup = group;
+                              });
+                            },
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                  subtitle: Text(
-                    group.groupCode,
-                    style: TextStyle(color: palette.textMuted),
-                  ),
-                  onTap: () => Navigator.of(dialogContext).pop(group),
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-          ],
+                    const SizedBox(height: 12),
+                    _ImportModeTile(
+                      selected: mode == GroupImportMode.addToCurrent,
+                      title: 'Add to current stats',
+                      subtitle:
+                          'Keeps current stats and adds values from the group.',
+                      palette: palette,
+                      onTap: () {
+                        setDialogState(() {
+                          mode = GroupImportMode.addToCurrent;
+                        });
+                      },
+                    ),
+                    _ImportModeTile(
+                      selected: mode == GroupImportMode.useSourceValues,
+                      title: 'Use source group stats',
+                      subtitle:
+                          'Replaces matching player stats with source values.',
+                      palette: palette,
+                      onTap: () {
+                        setDialogState(() {
+                          mode = GroupImportMode.useSourceValues;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: selectedGroup == null
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(
+                          _ImportGroupSelection(
+                            group: selectedGroup!,
+                            mode: mode,
+                          ),
+                        ),
+                  child: const Text('Import'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
 
-    if (selected == null) {
+    if (selection == null) {
       return;
     }
-    await controller.importStatsFromGroup(selected.sessionId);
+    await controller.importStatsFromGroup(
+      selection.group.sessionId,
+      mode: selection.mode,
+    );
+    if (!context.mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text(
+          'Import completed',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: palette.primary,
+      ),
+    );
   }
 
   @override

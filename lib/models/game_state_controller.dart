@@ -54,6 +54,8 @@ enum GroupDeviceMode { ownDevice, sharedDevices, adminDevice }
 
 enum CheckoutStrategy { professional, adaptive }
 
+enum GroupImportMode { addToCurrent, useSourceValues }
+
 class UserGameGroup {
   const UserGameGroup({
     required this.sessionId,
@@ -956,6 +958,7 @@ class GameStateController extends ChangeNotifier {
       'players': _players.map(_playerToMap).toList(),
       'participants': _players.map(_playerToParticipantMap).toList(),
       'sportEvents': _sportEvents.map(_sportEventToMap).toList(),
+      'matchHistory': _matchHistory.map(_matchHistoryToMap).toList(),
       'currentTurn': _currentTurn.map(_hitToMap).toList(),
       'currentPlayerIndex': _currentPlayerIndex,
       'matchMessage': _matchMessage,
@@ -983,6 +986,7 @@ class GameStateController extends ChangeNotifier {
       final membersValue = payload['members'];
       final turnValue = payload['currentTurn'];
       final sportEventsValue = payload['sportEvents'];
+      final historyValue = payload['matchHistory'];
       _liveMatchId = payload['id'] as String? ?? _liveMatchId;
       _activeGroupCode = payload['groupCode'] as String? ?? _activeGroupCode;
       _activeSessionName =
@@ -1029,6 +1033,15 @@ class GameStateController extends ChangeNotifier {
             (value) => _sportEventFromMap(Map<String, dynamic>.from(value)),
           ),
         );
+      if (payload.containsKey('matchHistory')) {
+        _matchHistory
+          ..clear()
+          ..addAll(
+            _asList(historyValue).whereType<Map>().map(
+              (value) => _matchHistoryFromMap(Map<String, dynamic>.from(value)),
+            ),
+          );
+      }
       _currentPlayerIndex = _intFromValue(payload['currentPlayerIndex']);
       if (_currentPlayerIndex >= _players.length) {
         _currentPlayerIndex = 0;
@@ -1201,7 +1214,10 @@ class GameStateController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> importStatsFromGroup(String sessionId) async {
+  Future<void> importStatsFromGroup(
+    String sessionId, {
+    GroupImportMode mode = GroupImportMode.addToCurrent,
+  }) async {
     if (!_cloudFeaturesAvailable || _currentUser.isGuest) {
       _liveMatchMessage = 'Sign in to import group stats.';
       notifyListeners();
@@ -1234,14 +1250,14 @@ class GameStateController extends ChangeNotifier {
         .whereType<Map>()
         .map((value) => _playerFromMap(Map<String, dynamic>.from(value)))
         .toList();
+    final sourceHistory = _asList(payload['matchHistory'])
+        .whereType<Map>()
+        .map((value) => _matchHistoryFromMap(Map<String, dynamic>.from(value)))
+        .toList();
     var imported = 0;
 
     for (final source in sourcePlayers) {
       final sourceStats = _persistentStatsForNewMatch(source.stats);
-      if (sourceStats.isEmpty && source.turns.isEmpty) {
-        continue;
-      }
-
       final targetIndex = _players.indexWhere((player) {
         final sourceUserId = source.userId;
         if (sourceUserId != null && sourceUserId.isNotEmpty) {
@@ -1263,18 +1279,37 @@ class GameStateController extends ChangeNotifier {
             stats: sourceStats,
           ),
         );
+        imported++;
       } else {
+        if (sourceStats.isEmpty) {
+          continue;
+        }
         final target = _players[targetIndex];
         _players[targetIndex] = target.copyWith(
-          stats: _mergedStats(target.stats, sourceStats),
+          stats: mode == GroupImportMode.addToCurrent
+              ? _mergedStats(target.stats, sourceStats)
+              : sourceStats,
         );
+        imported++;
       }
-      imported++;
+    }
+
+    var importedHistory = 0;
+    for (final entry in sourceHistory.reversed) {
+      if (_matchHistory.any((current) => current.id == entry.id)) {
+        continue;
+      }
+      _matchHistory.insert(0, entry);
+      importedHistory++;
     }
 
     _liveMatchMessage = imported == 0
         ? 'No stats were available to import.'
         : 'Imported stats for $imported players.';
+    if (importedHistory > 0) {
+      _liveMatchMessage =
+          '${_liveMatchMessage!} Imported $importedHistory history entries.';
+    }
     _syncLiveMatch();
     notifyListeners();
   }
@@ -1908,6 +1943,16 @@ class GameStateController extends ChangeNotifier {
     };
   }
 
+  Map<String, Object?> _matchHistoryToMap(MatchHistoryEntry entry) {
+    return {
+      'id': entry.id,
+      'date': entry.date.millisecondsSinceEpoch,
+      'settings': _settingsToMap(entry.settings),
+      'winnerName': entry.winnerName,
+      'finalScores': entry.finalScores.map(_playerToMap).toList(),
+    };
+  }
+
   SportEvent _sportEventFromMap(Map<String, dynamic> value) {
     final createdAt = _intFromValue(value['createdAt']);
     return SportEvent(
@@ -1921,6 +1966,25 @@ class GameStateController extends ChangeNotifier {
       createdAt: createdAt == 0
           ? DateTime.now()
           : DateTime.fromMillisecondsSinceEpoch(createdAt),
+    );
+  }
+
+  MatchHistoryEntry _matchHistoryFromMap(Map<String, dynamic> value) {
+    final date = _intFromValue(value['date']);
+    final settingsValue = value['settings'];
+    return MatchHistoryEntry(
+      id: value['id'] as String? ?? date.toString(),
+      date: date == 0
+          ? DateTime.now()
+          : DateTime.fromMillisecondsSinceEpoch(date),
+      settings: settingsValue is Map
+          ? _settingsFromMap(Map<String, dynamic>.from(settingsValue))
+          : _settings,
+      winnerName: value['winnerName'] as String? ?? 'Player',
+      finalScores: _asList(value['finalScores'])
+          .whereType<Map>()
+          .map((player) => _playerFromMap(Map<String, dynamic>.from(player)))
+          .toList(),
     );
   }
 
