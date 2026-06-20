@@ -335,8 +335,10 @@ class _CurrentTurnHeader extends StatelessWidget {
 
     final directScore = int.tryParse(value);
     if (directScore != null) {
-      final score = directScore.clamp(0, 60);
-      return _hitFromDirectScore(score);
+      if (directScore < 0 || directScore > 60) {
+        return null;
+      }
+      return _hitFromDirectScore(directScore);
     }
 
     if (value == 'B' || value == 'BULL') {
@@ -372,7 +374,7 @@ class _CurrentTurnHeader extends StatelessWidget {
     );
   }
 
-  DartHit _hitFromDirectScore(int score) {
+  DartHit? _hitFromDirectScore(int score) {
     if (score == 0) {
       return const DartHit(label: 'M', score: 0, band: SegmentBand.miss);
     }
@@ -421,7 +423,7 @@ class _CurrentTurnHeader extends StatelessWidget {
       );
     }
 
-    return DartHit(label: '$score', score: score, band: SegmentBand.single);
+    return null;
   }
 
   @override
