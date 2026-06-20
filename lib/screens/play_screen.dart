@@ -336,11 +336,7 @@ class _CurrentTurnHeader extends StatelessWidget {
     final directScore = int.tryParse(value);
     if (directScore != null) {
       final score = directScore.clamp(0, 60);
-      return DartHit(
-        label: score == 0 ? 'M' : '$score',
-        score: score,
-        band: score == 0 ? SegmentBand.miss : SegmentBand.single,
-      );
+      return _hitFromDirectScore(score);
     }
 
     if (value == 'B' || value == 'BULL') {
@@ -374,6 +370,58 @@ class _CurrentTurnHeader extends StatelessWidget {
       band: band,
       number: number,
     );
+  }
+
+  DartHit _hitFromDirectScore(int score) {
+    if (score == 0) {
+      return const DartHit(label: 'M', score: 0, band: SegmentBand.miss);
+    }
+    if (score == 50) {
+      return const DartHit(label: 'BULL', score: 50, band: SegmentBand.bull);
+    }
+    if (score == 25) {
+      return const DartHit(label: '25', score: 25, band: SegmentBand.outerBull);
+    }
+    if (score <= 20) {
+      return DartHit(
+        label: '$score',
+        score: score,
+        band: SegmentBand.single,
+        number: score,
+      );
+    }
+
+    if (score > 40 && score % 3 == 0 && score ~/ 3 <= 20) {
+      final number = score ~/ 3;
+      return DartHit(
+        label: 'T$number',
+        score: score,
+        band: SegmentBand.triple,
+        number: number,
+      );
+    }
+
+    if (score.isEven && score ~/ 2 <= 20) {
+      final number = score ~/ 2;
+      return DartHit(
+        label: 'D$number',
+        score: score,
+        band: SegmentBand.double,
+        number: number,
+      );
+    }
+
+    if (score % 3 == 0 && score ~/ 3 <= 20) {
+      final number = score ~/ 3;
+      return DartHit(
+        label: 'T$number',
+        score: score,
+        band: SegmentBand.triple,
+        number: number,
+      );
+    }
+
+    return DartHit(label: '$score', score: score, band: SegmentBand.single);
   }
 
   @override
