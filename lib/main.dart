@@ -31,6 +31,7 @@ class GameHubApp extends StatefulWidget {
 class _GameHubAppState extends State<GameHubApp> {
   static const _themePreferenceKey = 'app_theme_mode';
   static const _localePreferenceKey = 'app_locale';
+  static const _customActivitiesPreferenceKey = 'custom_activities';
 
   ThemeMode _themeMode = ThemeMode.system;
   Locale? _locale;
@@ -227,6 +228,28 @@ class RootScreen extends StatefulWidget {
 class _RootScreenState extends State<RootScreen> {
   final List<SportGame> _customActivities = [];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadCustomActivities();
+  }
+
+  Future<void> _loadCustomActivities() async {
+    final preferences = await SharedPreferences.getInstance();
+    final savedActivities = preferences.getString(
+      _GameHubAppState._customActivitiesPreferenceKey,
+    );
+    final activities = _decodeCustomActivities(savedActivities);
+    if (!mounted || activities.isEmpty) {
+      return;
+    }
+    setState(() {
+      _customActivities
+        ..clear()
+        ..addAll(activities);
+    });
+  }
+
   void _handleCreateActivity({
     required String name,
     required String description,
@@ -249,12 +272,95 @@ class _RootScreenState extends State<RootScreen> {
         ),
       );
     });
+    _saveCustomActivities();
   }
 
   void _handleDeleteActivity(String id) {
     setState(() {
       _customActivities.removeWhere((activity) => activity.id == id);
     });
+    _saveCustomActivities();
+  }
+
+  Future<void> _saveCustomActivities() async {
+    final preferences = await SharedPreferences.getInstance();
+    final encoded = jsonEncode(
+      _customActivities.map(_encodeCustomActivity).toList(),
+    );
+    await preferences.setString(
+      _GameHubAppState._customActivitiesPreferenceKey,
+      encoded,
+    );
+  }
+
+  Map<String, Object?> _encodeCustomActivity(SportGame activity) {
+    return {
+      'id': activity.id,
+      'name': activity.name,
+      'subtitle': activity.subtitle,
+      'color': activity.color.toARGB32(),
+      'modes': activity.modes,
+      'participants': activity.participants,
+    };
+  }
+
+  List<SportGame> _decodeCustomActivities(String? value) {
+    if (value == null || value.isEmpty) {
+      return const [];
+    }
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is! List) {
+        return const [];
+      }
+      return decoded
+          .whereType<Map>()
+          .map((rawActivity) {
+            final activity = Map<String, Object?>.from(rawActivity);
+            final id = activity['id'];
+            final name = activity['name'];
+            final subtitle = activity['subtitle'];
+            if (id is! String ||
+                id.isEmpty ||
+                name is! String ||
+                name.trim().isEmpty) {
+              return null;
+            }
+            final modes = _stringListFromJson(activity['modes']);
+            final participants = _stringListFromJson(activity['participants']);
+            final colorValue = activity['color'];
+            return SportGame(
+              id: id,
+              name: name,
+              subtitle: subtitle is String && subtitle.isNotEmpty
+                  ? subtitle
+                  : 'Custom rules activity',
+              icon: Icons.sports_kabaddi,
+              color: Color(colorValue is int ? colorValue : 0xFF1A6EB4),
+              modes: modes.isNotEmpty ? modes : const ['Custom Rules'],
+              participants: participants,
+              isCustom: true,
+              status: SportGameStatus.ready,
+            );
+          })
+          .whereType<SportGame>()
+          .toList();
+    } on FormatException {
+      return const [];
+    } on TypeError {
+      return const [];
+    }
+  }
+
+  List<String> _stringListFromJson(Object? value) {
+    if (value is! List) {
+      return const [];
+    }
+    return value
+        .whereType<String>()
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList();
   }
 
   @override

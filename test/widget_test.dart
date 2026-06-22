@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:game_hub/main.dart';
 import 'package:game_hub/l10n/app_localizations.dart';
@@ -10,6 +11,10 @@ import 'package:game_hub/models/sport_game.dart';
 import 'package:game_hub/widgets/dartboard.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   Future<void> pumpApp(
     WidgetTester tester, {
     Size size = const Size(1200, 800),
@@ -89,6 +94,35 @@ void main() {
     expect(find.text('Beer race'), findsOneWidget);
     expect(find.text('Custom'), findsOneWidget);
     expect(find.text('Player 1'), findsOneWidget);
+  });
+
+  testWidgets('keeps custom activities after app restart', (tester) async {
+    await pumpApp(tester);
+
+    await tester.tap(find.byTooltip('Activities'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Create activity'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).at(0), 'Quiz night');
+    await tester.enterText(find.byType(TextField).at(1), 'Highest score wins');
+    await tester.enterText(find.byType(TextField).at(2), 'Team A, Team B');
+    await tester.tap(find.widgetWithText(FilledButton, 'Create'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Quiz night'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+
+    await pumpApp(tester);
+    await tester.tap(find.byTooltip('Activities'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Quiz night'), findsOneWidget);
+    expect(find.text('Team A'), findsOneWidget);
+    expect(find.text('Custom'), findsOneWidget);
   });
 
   testWidgets('records a dartboard hit in the current turn', (tester) async {
